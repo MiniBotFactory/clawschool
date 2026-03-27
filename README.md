@@ -1,46 +1,161 @@
 # 🦞 ClawSchool
 
-**OpenClaw 一站式学习 & 评估平台**
+**OpenClaw 一站式学习、评估与聚合平台**
 
-聚合全网优质学习资源，发现最热门 Skill，系统化学习 Claw 技能。
+聚合全网优质学习资源，发现最热门 Skill，系统化学习 Claw 技能，AI 驱动自动运营。
+
+> 🌐 线上地址：[https://clawschool-five.vercel.app](https://clawschool-five.vercel.app)
+
+---
 
 ## ✨ 功能特色
 
 ### 📚 资源聚合
-- 从 GitHub、YouTube、博客、社区聚合 OpenClaw 学习资源
-- 按来源、分类筛选
-- 用户点赞/收藏功能
+- 从 GitHub、YouTube、博客、社区自动收集 OpenClaw 学习资源
+- 按来源 / 分类筛选，按热度 / 时间排序
+- 用户点赞、收藏
 
 ### 📖 课程集
-- 系统化课程系列（入门/进阶/高级）
-- 可订阅课程系列
-- 学习进度追踪
+- 系统化课程系列（入门 / 进阶 / 高级）
+- AI 自动生成课程大纲与内容
+- 课程集订阅，学习进度追踪
 
 ### 🏆 Skill 排行榜
-- 多维度排名（Stars/下载/趋势）
-- 支持筛选和排序
-- 实时数据更新
+- 多维度排名：Stars、下载量、7 天增长趋势
+- 分类筛选、多种排序
+- 数据自动更新
 
 ### 🛡️ 安全评估
-- 提交 Claw 进行安全评估
-- 多维度分析（安全/代码质量/依赖）
-- 详细的评估报告
+- 输入 GitHub 仓库地址一键评估
+- AI 多维度分析：安全检查、代码质量、依赖审计
+- 生成详细评估报告
 
 ### 👤 用户系统
-- 注册/登录
-- 收藏/订阅管理
-- 评估记录查看
+- 注册 / 登录（Supabase Auth）
+- 收藏、订阅、评估记录管理
+- 个人中心仪表盘
+
+### ⚙️ 管理后台
+- **仪表盘**：系统统计概览
+- **系统配置**：LLM 模型选择、收集参数设置
+- **Job 调度**：定时任务管理，手动触发
+- **内容收集**：一键触发 GitHub 收集、AI 课程生成、排名更新
+- **管理员管理**：添加 / 删除管理员，角色权限控制
+- 默认管理员：`wmango@hotmail.com`
+
+### 🤖 AI 自动运营
+- 基于 **OpenRouter.ai** 接入多种 LLM（Claude、GPT-4、Gemini）
+- 自动收集 GitHub 资源并 AI 分析质量
+- 自动生成课程大纲
+- 自动更新 Skill 排行榜
+- 支持通过环境变量切换模型
+
+---
+
+## 🛠️ 技术栈
+
+| 层级 | 技术 |
+|------|------|
+| 前端框架 | React 19 + TypeScript |
+| 构建工具 | Vite 8 |
+| 路由 | React Router v7 |
+| 状态管理 | React Context + Hooks |
+| 数据库 | Supabase (PostgreSQL) |
+| 认证 | Supabase Auth |
+| AI/LLM | OpenRouter.ai (Claude / GPT-4 / Gemini) |
+| SEO | react-helmet-async + JSON-LD |
+| 部署 | Vercel |
+
+---
+
+## 📁 项目结构
+
+```
+mvp/
+├── src/
+│   ├── api/
+│   │   ├── supabase.ts          # Supabase 客户端
+│   │   ├── openrouter.ts        # OpenRouter.ai LLM 集成
+│   │   ├── llm-config.ts        # LLM 模型配置
+│   │   ├── github-collector.ts  # GitHub 自动收集
+│   │   ├── services.ts          # 统一 API 服务层
+│   │   ├── admin.ts             # 管理后台 API
+│   │   ├── admin-auth.ts        # 管理员权限
+│   │   ├── storage.ts           # 本地存储 (备用)
+│   │   └── github.ts            # GitHub API (基础)
+│   ├── components/
+│   │   ├── Navbar.tsx            # 导航栏
+│   │   └── SEO.tsx               # SEO 组件
+│   ├── contexts/
+│   │   └── AuthContext.tsx        # 认证上下文
+│   ├── hooks/
+│   │   └── useUserData.ts        # 用户数据 Hook
+│   ├── pages/
+│   │   ├── Home.tsx               # 首页
+│   │   ├── Resources.tsx          # 资源聚合
+│   │   ├── CourseSets.tsx         # 课程集
+│   │   ├── Skills.tsx             # Skill 排行
+│   │   ├── Learning.tsx           # 学习中心
+│   │   ├── CourseDetail.tsx       # 课程详情
+│   │   ├── Evaluation.tsx         # 评估中心
+│   │   ├── User.tsx               # 用户中心
+│   │   ├── UserEvaluations.tsx    # 评估记录
+│   │   ├── UserCollections.tsx    # 我的收藏
+│   │   └── admin/
+│   │       ├── AdminLayout.tsx    # 管理后台布局
+│   │       ├── AdminDashboard.tsx # 仪表盘
+│   │       ├── AdminConfig.tsx    # 系统配置
+│   │       ├── AdminJobs.tsx      # Job 调度
+│   │       ├── AdminCollection.tsx# 内容收集
+│   │       └── AdminAdmins.tsx    # 管理员管理
+│   ├── types/index.ts             # TypeScript 类型
+│   ├── data/                      # 静态数据 (备用)
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+├── supabase/
+│   └── schema.sql                 # 数据库 Schema (18 个对象)
+├── public/
+│   ├── robots.txt
+│   └── sitemap.xml
+├── .env.example                   # 环境变量模板
+├── vercel.json
+├── BACKEND_SETUP.md               # 后端配置指南
+└── package.json
+```
+
+---
 
 ## 🚀 快速开始
 
-### 安装依赖
+### 1. 克隆项目
 
 ```bash
-cd mvp
+git clone git@github.com:MiniBotFactory/clawschool.git
+cd clawschool/mvp
 npm install
 ```
 
-### 开发模式
+### 2. 配置环境变量
+
+```bash
+cp .env.example .env
+```
+
+编辑 `.env` 填入你的密钥（详见 [BACKEND_SETUP.md](./BACKEND_SETUP.md)）：
+
+```env
+VITE_SUPABASE_URL=https://xxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+VITE_OPENROUTER_API_KEY=sk-or-v1-xxx
+VITE_GITHUB_TOKEN=ghp_xxx
+```
+
+### 3. 初始化数据库
+
+在 Supabase SQL Editor 中执行 `supabase/schema.sql`。
+
+### 4. 启动开发服务器
 
 ```bash
 npm run dev
@@ -48,136 +163,89 @@ npm run dev
 
 访问 http://localhost:5173
 
-### 构建生产版本
+### 5. 构建
 
 ```bash
 npm run build
 ```
 
-### 预览生产版本
+---
 
-```bash
-npm run preview
+## ⚙️ LLM 模型配置
+
+通过环境变量为不同任务配置不同模型：
+
+```env
+VITE_CONTENT_ANALYSIS_MODEL=google/gemini-2.0-flash-exp:free
+VITE_COURSE_GENERATION_MODEL=anthropic/claude-3.5-sonnet
+VITE_REPOSITORY_EVALUATION_MODEL=anthropic/claude-3.5-sonnet
+VITE_CHAT_MODEL=openai/gpt-4o-mini
 ```
 
-## 🛠️ 技术栈
+可用模型：
 
-- **前端框架**: React 18
-- **构建工具**: Vite
-- **语言**: TypeScript
-- **路由**: React Router v6
-- **样式**: CSS (CSS Variables)
-- **状态管理**: React Context + Hooks
-- **数据持久化**: localStorage
-- **API**: GitHub REST API
+| 模型 | 价格 | 适合场景 |
+|------|------|----------|
+| `google/gemini-2.0-flash-exp:free` | 免费 | 测试、大量内容处理 |
+| `openai/gpt-4o-mini` | $0.15/1M tokens | 快速对话 |
+| `anthropic/claude-3-haiku` | $0.25/1M tokens | 平衡质量 |
+| `openai/gpt-4o` | $2.50/1M tokens | 高质量 |
+| `anthropic/claude-3.5-sonnet` | $3/1M tokens | 最高质量 |
 
-## 📁 项目结构
-
-```
-mvp/
-├── src/
-│   ├── api/              # API 层
-│   │   ├── github.ts     # GitHub API 集成
-│   │   └── storage.ts    # 本地存储 API
-│   ├── components/       # 公共组件
-│   │   ├── Navbar.tsx    # 导航栏
-│   │   └── Navbar.css
-│   ├── contexts/         # React Context
-│   │   └── AuthContext.tsx
-│   ├── data/             # 静态数据
-│   │   ├── content.ts    # 资源、课程集、Skill 数据
-│   │   └── courses.ts    # 课程数据
-│   ├── hooks/            # 自定义 Hooks
-│   │   └── useUserData.ts
-│   ├── pages/            # 页面组件
-│   │   ├── Home.tsx      # 首页
-│   │   ├── Resources.tsx # 资源聚合
-│   │   ├── CourseSets.tsx # 课程集
-│   │   ├── Skills.tsx    # Skill 排行
-│   │   ├── Evaluation.tsx # 评估
-│   │   ├── User.tsx      # 用户中心
-│   │   └── ...
-│   ├── types/            # TypeScript 类型定义
-│   │   └── index.ts
-│   ├── App.tsx           # 应用入口
-│   ├── main.tsx          # 主入口
-│   └── index.css         # 全局样式
-├── public/               # 静态资源
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-└── vercel.json           # Vercel 配置
-```
-
-## 🎨 设计规范
-
-### 颜色系统
-- **主色**: #0D47A1 (深海蓝)
-- **次色**: #1E88E5 (科技蓝)
-- **强调色**: #00BFA5 (青绿)
-- **警告色**: #FF6D00 (橙)
-- **错误色**: #D32F2F (红)
-
-### 字体系统
-- **标题字体**: JetBrains Mono
-- **正文字体**: Inter
-- **代码字体**: Fira Code
-
-## 📊 数据与埋点
-
-### 核心事件
-- `user_register`: 用户注册
-- `resource_view`: 查看资源
-- `resource_like`: 点赞资源
-- `resource_collect`: 收藏资源
-- `course_subscribe`: 订阅课程
-- `skill_view`: 查看 Skill
-- `evaluation_submit`: 提交评估
+---
 
 ## 🚢 部署
 
 ### Vercel 部署
 
-1. Fork 或克隆此仓库
-2. 在 Vercel 中导入项目
-3. 配置构建设置：
-   - Framework Preset: Vite
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
+1. 在 [Vercel](https://vercel.com) 导入 GitHub 仓库
+2. Framework Preset: **Vite**
+3. 添加环境变量（4 个 `VITE_` 开头的变量）
 4. 部署
 
-### GitHub Pages 部署
+### 管理后台访问
 
-1. 修改 `vite.config.ts` 中的 `base` 为你的仓库名
-2. 运行 `npm run build`
-3. 将 `dist` 目录部署到 `gh-pages` 分支
+1. 用 `wmango@hotmail.com` 注册 / 登录
+2. 进入用户中心 → 点击「⚙️ 管理后台」
+3. 或直接访问 `/admin`
 
-## 📝 开发指南
+### 管理员角色
 
-### 添加新页面
+| 角色 | 查看数据 | 修改配置 | 触发任务 | 管理员管理 |
+|------|----------|----------|----------|------------|
+| super_admin | ✅ | ✅ | ✅ | ✅ |
+| admin | ✅ | ✅ | ✅ | ❌ |
+| editor | ✅ | ❌ | ✅ | ❌ |
 
-1. 在 `src/pages/` 创建页面组件
-2. 在 `src/pages/` 创建对应的 CSS 文件
-3. 在 `src/App.tsx` 添加路由
-4. 在 `src/components/Navbar.tsx` 添加导航链接
+---
 
-### 添加新功能
+## 🔄 自动运营流程
 
-1. 在 `src/types/index.ts` 定义类型
-2. 在 `src/api/` 实现 API 逻辑
-3. 在 `src/hooks/` 创建自定义 Hook
-4. 在页面组件中使用
+```
+GitHub/YouTube/博客
+      ↓
+ 自动收集 (每 6 小时)
+      ↓
+ AI 分析质量 + 分类
+      ↓
+ 存入 Supabase 数据库
+      ↓
+ 前端实时展示
+      ↓
+ 排名自动更新 (每小时)
+```
 
-### 数据持久化
+---
 
-项目使用 `localStorage` 进行数据持久化，所有数据存储在浏览器中。
+## 📊 SEO
 
-存储键名：
-- `clawschool_user`: 用户信息
-- `clawschool_auth_token`: 认证令牌
-- `clawschool_progress`: 学习进度
-- `clawschool_interactions`: 用户交互（点赞/收藏）
-- `clawschool_evaluations`: 评估记录
+- 每个页面独立 `<title>` / `<meta description>` / `<meta keywords>`
+- Open Graph + Twitter Cards 社交分享优化
+- JSON-LD 结构化数据（WebSite、Organization、Course、ItemList）
+- `robots.txt` + `sitemap.xml`
+- 语义化 HTML 标题层级
+
+---
 
 ## 🤝 贡献
 
@@ -189,4 +257,4 @@ MIT License
 
 ---
 
-**ClawSchool** - 让 OpenClaw 学习更简单 🦞
+**ClawSchool** — 让 OpenClaw 学习更简单 🦞
