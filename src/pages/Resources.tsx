@@ -1,0 +1,153 @@
+import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useInteractions } from '../hooks/useUserData';
+import Navbar from '../components/Navbar';
+import { resources } from '../data/content';
+import './Resources.css';
+
+export default function Resources() {
+  const [selectedSource, setSelectedSource] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const { isAuthenticated } = useAuth();
+  const { isLiked, isCollected, toggleLike, toggleCollect } = useInteractions();
+  
+  const filteredResources = resources.filter(r => {
+    if (selectedSource !== 'all' && r.source !== selectedSource) return false;
+    if (selectedCategory !== 'all' && r.category !== selectedCategory) return false;
+    return true;
+  });
+  
+  const sourceIcons: Record<string, string> = {
+    github: '🐙',
+    youtube: '📺',
+    blog: '📝',
+    community: '💬'
+  };
+  
+  const categories = [...new Set(resources.map(r => r.category))];
+  
+  return (
+    <div className="resources-page">
+      <Navbar />
+      
+      <main className="resources-main">
+        <div className="container">
+          <div className="resources-header">
+            <h1>📚 学习资源库</h1>
+            <p className="text-gray">聚合全网优质 OpenClaw 学习资源，帮你节省搜索时间</p>
+          </div>
+          
+          <div className="resources-filters">
+            <div className="filter-group">
+              <span className="filter-label">来源:</span>
+              <div className="filter-buttons">
+                <button 
+                  className={`filter-btn ${selectedSource === 'all' ? 'active' : ''}`}
+                  onClick={() => setSelectedSource('all')}
+                >
+                  全部
+                </button>
+                <button 
+                  className={`filter-btn ${selectedSource === 'github' ? 'active' : ''}`}
+                  onClick={() => setSelectedSource('github')}
+                >
+                  🐙 GitHub
+                </button>
+                <button 
+                  className={`filter-btn ${selectedSource === 'youtube' ? 'active' : ''}`}
+                  onClick={() => setSelectedSource('youtube')}
+                >
+                  📺 YouTube
+                </button>
+                <button 
+                  className={`filter-btn ${selectedSource === 'blog' ? 'active' : ''}`}
+                  onClick={() => setSelectedSource('blog')}
+                >
+                  📝 博客
+                </button>
+                <button 
+                  className={`filter-btn ${selectedSource === 'community' ? 'active' : ''}`}
+                  onClick={() => setSelectedSource('community')}
+                >
+                  💬 社区
+                </button>
+              </div>
+            </div>
+            
+            <div className="filter-group">
+              <span className="filter-label">分类:</span>
+              <select 
+                className="input" 
+                style={{ width: 'auto' }}
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">全部分类</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="resources-stats">
+            <span>共 {filteredResources.length} 条资源</span>
+            <span>更新频率: 每日</span>
+          </div>
+          
+          <div className="resources-list">
+            {filteredResources.map(resource => (
+              <div key={resource.id} className="resource-card card">
+                <div className="resource-header">
+                  <span className="resource-source">
+                    {sourceIcons[resource.source]} {resource.source}
+                  </span>
+                  <span className="resource-date">{resource.publishedAt}</span>
+                </div>
+                
+                <h3 className="resource-title">
+                  <a href={resource.url} target="_blank" rel="noopener noreferrer">
+                    {resource.title}
+                  </a>
+                </h3>
+                
+                <p className="resource-desc">{resource.description}</p>
+                
+                <div className="resource-tags">
+                  {resource.tags.map(tag => (
+                    <span key={tag} className="tag">{tag}</span>
+                  ))}
+                </div>
+                
+                <div className="resource-footer">
+                  <div className="resource-stats">
+                    <span>❤️ {resource.likes + (isLiked(resource.id) ? 1 : 0)}</span>
+                    <span>👁️ {resource.views}</span>
+                  </div>
+                  <div className="resource-actions">
+                    <button 
+                      className={`action-btn like ${isLiked(resource.id) ? 'active' : ''}`}
+                      onClick={() => isAuthenticated && toggleLike(resource.id)}
+                      disabled={!isAuthenticated}
+                      title={isAuthenticated ? '' : '请先登录'}
+                    >
+                      {isLiked(resource.id) ? '❤️ 已赞' : '🤍 点赞'}
+                    </button>
+                    <button 
+                      className={`action-btn collect ${isCollected(resource.id) ? 'active' : ''}`}
+                      onClick={() => isAuthenticated && toggleCollect(resource.id)}
+                      disabled={!isAuthenticated}
+                      title={isAuthenticated ? '' : '请先登录'}
+                    >
+                      {isCollected(resource.id) ? '⭐ 已收藏' : '☆ 收藏'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

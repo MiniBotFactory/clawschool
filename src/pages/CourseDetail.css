@@ -1,0 +1,104 @@
+.course-detail {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.course-detail-main {
+  flex: 1;
+  padding: 24px 0 48px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: var(--text-gray);
+}
+
+.course-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.course-tag {
+  display: inline-block;
+  font-size: 0.875rem;
+  color: var(--secondary);
+  margin-bottom: 8px;
+}
+
+.course-detail-header h1 {
+  margin-bottom: 8px;
+}
+
+.course-content {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+}
+
+.markdown-content {
+  line-height: 1.8;
+}
+
+.markdown-content h1 {
+  font-size: 1.75rem;
+  margin: 32px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown-content h2 {
+  font-size: 1.375rem;
+  margin: 24px 0 12px;
+}
+
+.markdown-content h3 {
+  font-size: 1.125rem;
+  margin: 20px 0 8px;
+}
+
+.markdown-content p {
+  margin: 12px 0;
+}
+
+.markdown-content li {
+  margin: 8px 0;
+  margin-left: 24px;
+}
+
+.markdown-content code {
+  font-family: var(--font-code);
+  background: #F3F4F6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+.markdown-content pre {
+  background: #1E293B;
+  color: #E2E8F0;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.markdown-content pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.course-nav {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+}

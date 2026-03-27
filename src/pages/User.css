@@ -1,0 +1,170 @@
+.user-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-main {
+  flex: 1;
+  padding: 48px 0;
+}
+
+.auth-card {
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.auth-card h1 {
+  margin-bottom: 8px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.auth-note {
+  margin-top: 16px;
+  font-size: 0.875rem;
+}
+
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.user-avatar {
+  font-size: 3rem;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-info h2 {
+  margin-bottom: 4px;
+}
+
+.user-meta {
+  font-size: 0.875rem;
+  color: var(--text-gray);
+}
+
+.user-stats {
+  display: flex;
+  gap: 32px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-gray);
+}
+
+.user-tabs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  background: none;
+  color: var(--text-gray);
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--primary);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.courses-list,
+.evaluations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.course-progress-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.course-progress-info {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.course-progress-info h3 {
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.course-progress-value {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.evaluation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.evaluation-info h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.evaluation-score {
+  text-align: center;
+  min-width: 60px;
+}
+
+.score-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.score-label {
+  font-size: 0.75rem;
+  color: var(--text-gray);
+}
+
+@media (max-width: 768px) {
+  .user-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .user-stats {
+    justify-content: center;
+  }
+}
