@@ -1,6 +1,8 @@
 // OpenRouter.ai 集成
 // 支持多个 LLM 模型：Claude, GPT-4, Gemini 等
 
+import { LLM_CONFIG, getContentAnalysisModel, getCourseGenerationModel, getRepositoryEvaluationModel } from './llm-config';
+
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1';
 
 interface Message {
@@ -14,16 +16,6 @@ interface ChatCompletionOptions {
   maxTokens?: number;
   stream?: boolean;
 }
-
-// 默认模型配置
-export const MODELS = {
-  CLAUDE_SONNET: 'anthropic/claude-3.5-sonnet',
-  CLAUDE_HAIKU: 'anthropic/claude-3-haiku',
-  GPT4O: 'openai/gpt-4o',
-  GPT4O_MINI: 'openai/gpt-4o-mini',
-  GEMINI_FLASH: 'google/gemini-2.0-flash-exp:free',
-  GEMINI_PRO: 'google/gemini-pro-1.5'
-} as const;
 
 // 获取 API Key
 function getApiKey(): string {
@@ -40,7 +32,7 @@ export async function chatCompletion(
   options: ChatCompletionOptions = {}
 ): Promise<string> {
   const {
-    model = MODELS.CLAUDE_SONNET,
+    model = LLM_CONFIG.CHAT,
     temperature = 0.7,
     maxTokens = 4096,
     stream = false
@@ -78,7 +70,7 @@ export async function* streamChatCompletion(
   options: ChatCompletionOptions = {}
 ): AsyncGenerator<string> {
   const {
-    model = MODELS.CLAUDE_SONNET,
+    model = LLM_CONFIG.CHAT,
     temperature = 0.7,
     maxTokens = 4096
   } = options;
@@ -146,6 +138,8 @@ export async function analyzeResourceQuality(title: string, description: string)
   tags: string[];
   summary: string;
 }> {
+  const config = getContentAnalysisModel();
+  
   const prompt = `分析以下 OpenClaw 学习资源的质量和分类：
 
 标题: ${title}
@@ -161,7 +155,7 @@ export async function analyzeResourceQuality(title: string, description: string)
 
   const response = await chatCompletion(
     [{ role: 'user', content: prompt }],
-    { model: MODELS.GPT4O_MINI, temperature: 0.3 }
+    { model: config.model, temperature: config.temperature, maxTokens: config.maxTokens }
   );
 
   try {
@@ -182,6 +176,8 @@ export async function generateCourseOutline(topic: string, level: 'beginner' | '
   description: string;
   lessons: { title: string; description: string }[];
 }> {
+  const config = getCourseGenerationModel();
+  
   const prompt = `为 OpenClaw 生成一个${level}级别的课程大纲：
 
 主题: ${topic}
@@ -198,7 +194,7 @@ export async function generateCourseOutline(topic: string, level: 'beginner' | '
 
   const response = await chatCompletion(
     [{ role: 'user', content: prompt }],
-    { model: MODELS.CLAUDE_HAIKU, temperature: 0.7 }
+    { model: config.model, temperature: config.temperature, maxTokens: config.maxTokens }
   );
 
   try {
@@ -223,6 +219,8 @@ export async function evaluateRepository(
   codeQuality: { score: number; issues: string[] };
   summary: string;
 }> {
+  const config = getRepositoryEvaluationModel();
+  
   const prompt = `评估以下 GitHub 仓库的质量和安全性：
 
 仓库: ${repoName}
@@ -251,7 +249,7 @@ ${readme.slice(0, 2000)}
 
   const response = await chatCompletion(
     [{ role: 'user', content: prompt }],
-    { model: MODELS.CLAUDE_SONNET, temperature: 0.3 }
+    { model: config.model, temperature: config.temperature, maxTokens: config.maxTokens }
   );
 
   try {

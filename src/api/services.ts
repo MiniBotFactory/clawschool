@@ -2,7 +2,8 @@
 // 提供统一的 API 接口给前端使用
 
 import { supabase, TABLES } from './supabase';
-import { chatCompletion, analyzeResourceQuality, generateCourseOutline, evaluateRepository, MODELS } from './openrouter';
+import { chatCompletion, analyzeResourceQuality, generateCourseOutline, evaluateRepository } from './openrouter';
+import { LLM_CONFIG } from './llm-config';
 import { collectOpenClawResources, getRepository, getRepositoryReadme } from './github-collector';
 
 // ==================== 资源 API ====================
@@ -294,7 +295,7 @@ export const aiApi = {
     try {
       const response = await chatCompletion(
         [{ role: 'user', content: message }],
-        { model: model || MODELS.CLAUDE_SONNET }
+        { model: model || LLM_CONFIG.CHAT }
       );
       return { success: true, response };
     } catch (err) {
