@@ -1,0 +1,196 @@
+-- ClawSchool 数据库 Schema
+-- 在 Supabase SQL Editor 中执行此脚本
+
+-- 1. 资源表
+CREATE TABLE IF NOT EXISTS resources (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  url TEXT NOT NULL,
+  source TEXT CHECK (source IN ('github', 'youtube', 'blog', 'community')),
+  category TEXT,
+  likes INTEGER DEFAULT 0,
+  views INTEGER DEFAULT 0,
+  publishedAt TIMESTAMPTZ DEFAULT NOW(),
+  tags TEXT[] DEFAULT '{}',
+  author TEXT,
+  thumbnail TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Skills 表
+CREATE TABLE IF NOT EXISTS skills (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  author TEXT,
+  githubUrl TEXT,
+  stars INTEGER DEFAULT 0,
+  forks INTEGER DEFAULT 0,
+  downloads INTEGER DEFAULT 0,
+  issues INTEGER DEFAULT 0,
+  lastUpdate TIMESTAMPTZ,
+  trend DECIMAL(5,2) DEFAULT 0,
+  rank INTEGER,
+  category TEXT,
+  license TEXT,
+  language TEXT,
+  topics TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. 课程集表
+CREATE TABLE IF NOT EXISTS course_sets (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  icon TEXT,
+  category TEXT CHECK (category IN ('beginner', 'intermediate', 'advanced')),
+  subscribers INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. 课程表
+CREATE TABLE IF NOT EXISTS courses (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  course_set_id UUID REFERENCES course_sets(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT CHECK (category IN ('installation', 'basic', 'advanced')),
+  duration TEXT,
+  content TEXT,
+  "order" INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. 用户表 (扩展 Supabase Auth)
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id UUID REFERENCES auth.users(id) PRIMARY KEY,
+  name TEXT,
+  avatar_url TEXT,
+  courses_completed INTEGER DEFAULT 0,
+  resources_liked INTEGER DEFAULT 0,
+  resources_collected INTEGER DEFAULT 0,
+  evaluations_submitted INTEGER DEFAULT 0,
+  course_sets_subscribed INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. 用户交互表
+CREATE TABLE IF NOT EXISTS user_interactions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT CHECK (type IN ('like', 'collect', 'subscribe', 'view')),
+  resource_id UUID REFERENCES resources(id) ON DELETE CASCADE,
+  skill_id UUID REFERENCES skills(id) ON DELETE CASCADE,
+  course_set_id UUID REFERENCES course_sets(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, type, resource_id, skill_id, course_set_id)
+);
+
+-- 7. 评估表
+CREATE TABLE IF NOT EXISTS evaluations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  url TEXT NOT NULL,
+  repositoryName TEXT,
+  status TEXT CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  result JSONB,
+  submittedAt TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 8. 内容队列表（用于自动收集）
+CREATE TABLE IF NOT EXISTS content_queue (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  source TEXT NOT NULL,
+  url TEXT NOT NULL,
+  title TEXT,
+  description TEXT,
+  metadata JSONB,
+  status TEXT CHECK (status IN ('pending', 'processing', 'completed', 'failed')) DEFAULT 'pending',
+  processed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 9. 创建索引
+CREATE INDEX IF NOT EXISTS idx_resources_source ON resources(source);
+CREATE INDEX IF NOT EXISTS idx_resources_category ON resources(category);
+CREATE INDEX IF NOT EXISTS idx_resources_publishedAt ON resources(publishedAt DESC);
+CREATE INDEX IF NOT EXISTS idx_skills_category ON skills(category);
+CREATE INDEX IF NOT EXISTS idx_skills_rank ON skills(rank);
+CREATE INDEX IF NOT EXISTS idx_skills_stars ON skills(stars DESC);
+CREATE INDEX IF NOT EXISTS idx_course_sets_category ON course_sets(category);
+CREATE INDEX IF NOT EXISTS idx_courses_course_set_id ON courses(course_set_id);
+CREATE INDEX IF NOT EXISTS idx_user_interactions_user_id ON user_interactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_evaluations_user_id ON evaluations(user_id);
+CREATE INDEX IF NOT EXISTS idx_content_queue_status ON content_queue(status);
+
+-- 10. 创建 RLS 策略
+ALTER TABLE resources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE course_sets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_interactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE evaluations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE content_queue ENABLE ROW LEVEL SECURITY;
+
+-- 公开读取资源、skills、课程集
+CREATE POLICY "Public read resources" ON resources FOR SELECT USING (true);
+CREATE POLICY "Public read skills" ON skills FOR SELECT USING (true);
+CREATE POLICY "Public read course_sets" ON course_sets FOR SELECT USING (true);
+CREATE POLICY "Public read courses" ON courses FOR SELECT USING (true);
+
+-- 用户只能访问自己的数据
+CREATE POLICY "Users can read own profile" ON user_profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON user_profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can read own interactions" ON user_interactions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own interactions" ON user_interactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own interactions" ON user_interactions FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can read own evaluations" ON evaluations FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own evaluations" ON evaluations FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- 11. 创建函数
+CREATE OR REPLACE FUNCTION increment_likes(resource_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE resources SET likes = likes + 1 WHERE id = resource_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION increment_subscribers(course_set_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE course_sets SET subscribers = subscribers + 1 WHERE id = course_set_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 12. 创建触发器（自动更新 updated_at）
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_resources_updated_at BEFORE UPDATE ON resources
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_skills_updated_at BEFORE UPDATE ON skills
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_course_sets_updated_at BEFORE UPDATE ON course_sets
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_courses_updated_at BEFORE UPDATE ON courses
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
