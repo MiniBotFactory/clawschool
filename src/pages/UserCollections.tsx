@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useInteractions } from '../hooks/useUserData';
 import { resources, courseSets } from '../data/content';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import './UserCollections.css';
 
 export default function UserCollections() {
@@ -39,6 +40,11 @@ export default function UserCollections() {
   
   return (
     <div className="user-collections-page">
+      <SEO
+        title="我的收藏"
+        description="管理你收藏的 OpenClaw 学习资源、点赞的内容、订阅的课程系列。"
+        canonicalUrl="/user/collections"
+      />
       <Navbar />
       
       <main className="page-main">

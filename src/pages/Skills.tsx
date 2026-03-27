@@ -1,6 +1,6 @@
 import { useState } from 'react';
-
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import { skills } from '../data/content';
 import './Skills.css';
 
@@ -23,6 +23,12 @@ export default function Skills() {
   
   return (
     <div className="skills-page">
+      <SEO
+        title="Skill 排行榜"
+        description="发现最热门的 OpenClaw Skill，多维度排名包括 Stars、下载量、趋势等。"
+        canonicalUrl="/skills"
+        keywords="OpenClaw Skill, Claw 排行榜, AI Agent 插件, 最佳 Skill, 热门插件"
+      />
       <Navbar />
       
       <main className="skills-main">

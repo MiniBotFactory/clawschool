@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useEvaluations } from '../hooks/useUserData';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import './UserEvaluations.css';
 
 export default function UserEvaluations() {
@@ -46,6 +47,11 @@ export default function UserEvaluations() {
   
   return (
     <div className="user-evaluations-page">
+      <SEO
+        title="我的评估记录"
+        description="查看你提交的所有 Claw 评估结果，包括安全检查、代码质量、依赖分析等。"
+        canonicalUrl="/user/evaluations"
+      />
       <Navbar />
       
       <main className="page-main">
@@ -98,7 +104,7 @@ export default function UserEvaluations() {
                           </div>
                           {evaluation.result.securityCheck.issues.length > 0 && (
                             <ul className="detail-list">
-                              {evaluation.result.securityCheck.issues.map((issue, i) => (
+                              {evaluation.result.securityCheck.issues.map((issue: string, i: number) => (
                                 <li key={i}>{issue}</li>
                               ))}
                             </ul>
@@ -117,7 +123,7 @@ export default function UserEvaluations() {
                         <div className="detail-section">
                           <h4>💡 建议</h4>
                           <ul className="detail-list">
-                            {evaluation.result.securityCheck.recommendations.map((rec, i) => (
+                            {evaluation.result.securityCheck.recommendations.map((rec: string, i: number) => (
                               <li key={i}>{rec}</li>
                             ))}
                           </ul>

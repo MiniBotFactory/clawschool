@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useEvaluations } from '../hooks/useUserData';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import './Evaluation.css';
 
 export default function Evaluation() {
@@ -22,6 +23,12 @@ export default function Evaluation() {
   
   return (
     <div className="evaluation">
+      <SEO
+        title="Claw 评估中心"
+        description="提交你的 Claw 进行安全评估，获取安全检查报告、代码质量分析、依赖分析等多维度评估结果。"
+        canonicalUrl="/evaluation"
+        keywords="OpenClaw 安全评估, Claw 检查, AI Agent 安全, 漏洞扫描"
+      />
       <Navbar />
       
       <main className="evaluation-main">

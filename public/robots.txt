@@ -1,0 +1,12 @@
+# robots.txt for ClawSchool
+# https://clawschool-five.vercel.app
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://clawschool-five.vercel.app/sitemap.xml
+
+# Disallow private pages
+Disallow: /user/evaluations
+Disallow: /user/collections

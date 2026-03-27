@@ -1,11 +1,55 @@
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import { resources, courseSets, skills } from '../data/content';
 import './Home.css';
 
 export default function Home() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'ClawSchool - OpenClaw 一站式学习 & 聚合平台',
+    description: '聚合全网优质 OpenClaw 学习资源，发现最热门 Skill，系统化学习 Claw 技能。',
+    url: 'https://clawschool-five.vercel.app/',
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: '资源库',
+          url: 'https://clawschool-five.vercel.app/resources'
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: '课程集',
+          url: 'https://clawschool-five.vercel.app/course-sets'
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: 'Skill 排行榜',
+          url: 'https://clawschool-five.vercel.app/skills'
+        },
+        {
+          '@type': 'ListItem',
+          position: 4,
+          name: '安全评估',
+          url: 'https://clawschool-five.vercel.app/evaluation'
+        }
+      ]
+    }
+  };
+
   return (
     <div className="home">
+      <SEO
+        title="首页"
+        description="OpenClaw 一站式学习 & 评估平台 - 聚合全网优质学习资源，发现最热门 Skill，系统化学习 Claw 技能"
+        canonicalUrl="/"
+        jsonLd={jsonLd}
+      />
       <Navbar />
       
       <section className="hero">

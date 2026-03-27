@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import { courses } from '../data/courses';
 import './CourseDetail.css';
 
@@ -141,6 +142,7 @@ export default function CourseDetail() {
     return (
       <div className="learning">
         <Navbar />
+        <SEO title="课程未找到" />
         <div className="container mt-xl">
           <h2>课程未找到</h2>
           <Link to="/learning">返回学习中心</Link>
@@ -151,6 +153,24 @@ export default function CourseDetail() {
   
   return (
     <div className="course-detail">
+      <SEO
+        title={course.title}
+        description={course.description}
+        canonicalUrl={`/course/${id}`}
+        keywords={`OpenClaw 教程, ${course.title}, Claw 学习`}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Course',
+          name: course.title,
+          description: course.description,
+          provider: {
+            '@type': 'Organization',
+            name: 'ClawSchool',
+            url: 'https://clawschool-five.vercel.app'
+          },
+          educationalLevel: course.category === 'advanced' ? '高级' : course.category === 'basic' ? '进阶' : '入门'
+        }}
+      />
       <Navbar />
       
       <main className="course-detail-main">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import { courses, categories } from '../data/courses';
 import './Learning.css';
 
@@ -13,6 +14,12 @@ export default function Learning() {
   
   return (
     <div className="learning">
+      <SEO
+        title="学习中心"
+        description="从入门到进阶，系统化学习 OpenClaw 技能，包括安装指南、基础技能、进阶技能。"
+        canonicalUrl="/learning"
+        keywords="OpenClaw 教程, Claw 学习, AI Agent 培训, Skill 开发课程"
+      />
       <Navbar />
       
       <main className="learning-main">

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HelmetProvider } from 'react-helmet-async'
 import { AuthProvider } from './contexts/AuthContext'
 import Home from './pages/Home'
 import Resources from './pages/Resources'
@@ -14,22 +15,24 @@ import './index.css'
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/resources" element={<Resources />} />
-          <Route path="/course-sets" element={<CourseSets />} />
-          <Route path="/skills" element={<Skills />} />
-          <Route path="/learning" element={<Learning />} />
-          <Route path="/course/:id" element={<CourseDetail />} />
-          <Route path="/evaluation" element={<Evaluation />} />
-          <Route path="/user" element={<User />} />
-          <Route path="/user/evaluations" element={<UserEvaluations />} />
-          <Route path="/user/collections" element={<UserCollections />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/course-sets" element={<CourseSets />} />
+            <Route path="/skills" element={<Skills />} />
+            <Route path="/learning" element={<Learning />} />
+            <Route path="/course/:id" element={<CourseDetail />} />
+            <Route path="/evaluation" element={<Evaluation />} />
+            <Route path="/user" element={<User />} />
+            <Route path="/user/evaluations" element={<UserEvaluations />} />
+            <Route path="/user/collections" element={<UserCollections />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </HelmetProvider>
   )
 }
 

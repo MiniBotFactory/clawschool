@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useInteractions } from '../hooks/useUserData';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import { courseSets } from '../data/content';
 import './CourseSets.css';
 
@@ -22,6 +23,25 @@ export default function CourseSets() {
   
   return (
     <div className="course-sets-page">
+      <SEO
+        title="课程集"
+        description="由 ClawSchool 团队精心制作的系统化 OpenClaw 课程，涵盖入门、进阶、高级三个层次。"
+        canonicalUrl="/course-sets"
+        keywords="OpenClaw 课程, Claw 学习, AI Agent 教程, Skill 开发, 安全加固"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: 'ClawSchool 课程集',
+          description: '系统化 OpenClaw 课程系列',
+          numberOfItems: courseSets.length,
+          itemListElement: courseSets.map((cs, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: cs.title,
+            url: `https://clawschool-five.vercel.app/course-sets#${cs.id}`
+          }))
+        }}
+      />
       <Navbar />
       
       <main className="course-sets-main">

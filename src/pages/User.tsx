@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import './User.css';
 
 export default function User() {
@@ -52,6 +53,11 @@ export default function User() {
   if (isAuthenticated && user) {
     return (
       <div className="user-page">
+        <SEO
+          title="用户中心"
+          description="管理你的学习进度、收藏资源、评估记录。"
+          canonicalUrl="/user"
+        />
         <Navbar />
         
         <main className="user-main">
@@ -137,6 +143,11 @@ export default function User() {
   
   return (
     <div className="user-page">
+      <SEO
+        title="登录 / 注册"
+        description="登录 ClawSchool 开始你的 OpenClaw 学习之旅，记录学习进度，收藏资源，提交评估。"
+        canonicalUrl="/user"
+      />
       <Navbar />
       
       <main className="user-main">

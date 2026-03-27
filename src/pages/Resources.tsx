@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useInteractions } from '../hooks/useUserData';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import { resources } from '../data/content';
 import './Resources.css';
 
@@ -28,6 +29,12 @@ export default function Resources() {
   
   return (
     <div className="resources-page">
+      <SEO
+        title="学习资源库"
+        description="聚合全网优质 OpenClaw 学习资源，包括 GitHub 项目、YouTube 教程、技术博客、社区讨论。"
+        canonicalUrl="/resources"
+        keywords="OpenClaw 资源, Claw 教程, AI Agent 学习, OpenClaw GitHub, Claw 教程视频"
+      />
       <Navbar />
       
       <main className="resources-main">
