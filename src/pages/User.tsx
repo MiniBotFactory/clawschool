@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { isCurrentUserAdmin } from '../api/admin-auth';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
 import './User.css';
@@ -8,6 +9,13 @@ import './User.css';
 export default function User() {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      isCurrentUserAdmin().then(setIsAdmin);
+    }
+  }, [isAuthenticated]);
   
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
@@ -108,6 +116,11 @@ export default function User() {
                 <Link to="/user/evaluations" className="btn btn-secondary">
                   我的评估
                 </Link>
+                {isAdmin && (
+                  <Link to="/admin" className="btn btn-admin">
+                    ⚙️ 管理后台
+                  </Link>
+                )}
                 <button onClick={handleLogout} className="btn btn-danger">
                   退出登录
                 </button>
