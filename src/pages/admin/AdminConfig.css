@@ -1,0 +1,86 @@
+.admin-message {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.admin-message.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.admin-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.config-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.config-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  gap: 20px;
+}
+
+.config-info {
+  flex: 1;
+}
+
+.config-info label {
+  display: block;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.config-key {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.config-value {
+  min-width: 200px;
+}
+
+.env-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.env-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.env-name {
+  font-family: monospace;
+  color: #374151;
+}
+
+.env-status {
+  font-size: 0.75rem;
+  color: #065f46;
+  background: #d1fae5;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.help-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}

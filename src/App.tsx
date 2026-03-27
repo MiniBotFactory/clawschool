@@ -11,6 +11,11 @@ import Evaluation from './pages/Evaluation'
 import User from './pages/User'
 import UserEvaluations from './pages/UserEvaluations'
 import UserCollections from './pages/UserCollections'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminConfig from './pages/admin/AdminConfig'
+import AdminJobs from './pages/admin/AdminJobs'
+import AdminCollection from './pages/admin/AdminCollection'
+import AdminAdmins from './pages/admin/AdminAdmins'
 import './index.css'
 
 function App() {
@@ -29,6 +34,11 @@ function App() {
             <Route path="/user" element={<User />} />
             <Route path="/user/evaluations" element={<UserEvaluations />} />
             <Route path="/user/collections" element={<UserCollections />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/config" element={<AdminConfig />} />
+            <Route path="/admin/jobs" element={<AdminJobs />} />
+            <Route path="/admin/collection" element={<AdminCollection />} />
+            <Route path="/admin/admins" element={<AdminAdmins />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

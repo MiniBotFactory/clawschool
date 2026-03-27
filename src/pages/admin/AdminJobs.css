@@ -1,0 +1,30 @@
+code {
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.schedule-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.schedule-item {
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.schedule-item h4 {
+  margin-bottom: 8px;
+  color: #374151;
+}
+
+.schedule-item p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}

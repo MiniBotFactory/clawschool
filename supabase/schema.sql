@@ -194,3 +194,110 @@ CREATE TRIGGER update_courses_updated_at BEFORE UPDATE ON courses
 
 CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ==================== 管理后台表 ====================
+
+-- 13. 管理员表
+CREATE TABLE IF NOT EXISTS admins (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  role TEXT CHECK (role IN ('super_admin', 'admin', 'editor')) DEFAULT 'admin',
+  last_login TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 14. 系统配置表
+CREATE TABLE IF NOT EXISTS system_config (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  key TEXT NOT NULL UNIQUE,
+  value TEXT NOT NULL,
+  description TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 15. 定时任务表
+CREATE TABLE IF NOT EXISTS scheduled_jobs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  schedule TEXT NOT NULL,
+  enabled BOOLEAN DEFAULT true,
+  status TEXT CHECK (status IN ('idle', 'running', 'failed', 'success')) DEFAULT 'idle',
+  last_run TIMESTAMPTZ,
+  next_run TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 管理员表索引
+CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
+CREATE INDEX IF NOT EXISTS idx_admins_user_id ON admins(user_id);
+CREATE INDEX IF NOT EXISTS idx_system_config_key ON system_config(key);
+CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_name ON scheduled_jobs(name);
+
+-- 管理员表 RLS
+ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scheduled_jobs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can read admin list" ON admins FOR SELECT USING (true);
+CREATE POLICY "Only super_admin can manage admins" ON admins FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM admins a
+    WHERE a.user_id = auth.uid() AND a.role = 'super_admin'
+  )
+  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
+);
+
+CREATE POLICY "Admins can read config" ON system_config FOR SELECT USING (
+  EXISTS (SELECT 1 FROM admins a WHERE a.user_id = auth.uid())
+  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
+);
+CREATE POLICY "Admins can update config" ON system_config FOR ALL USING (
+  EXISTS (SELECT 1 FROM admins a WHERE a.user_id = auth.uid() AND a.role IN ('super_admin', 'admin'))
+  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
+);
+
+CREATE POLICY "Admins can read jobs" ON scheduled_jobs FOR SELECT USING (
+  EXISTS (SELECT 1 FROM admins a WHERE a.user_id = auth.uid())
+  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
+);
+CREATE POLICY "Admins can manage jobs" ON scheduled_jobs FOR ALL USING (
+  EXISTS (SELECT 1 FROM admins a WHERE a.user_id = auth.uid() AND a.role IN ('super_admin', 'admin'))
+  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
+);
+
+-- 管理员表触发器
+CREATE TRIGGER update_admins_updated_at BEFORE UPDATE ON admins
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER update_system_config_updated_at BEFORE UPDATE ON system_config
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER update_scheduled_jobs_updated_at BEFORE UPDATE ON scheduled_jobs
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 16. 插入默认管理员
+INSERT INTO admins (email, name, role) VALUES ('wmango@hotmail.com', 'Super Admin', 'super_admin')
+ON CONFLICT (email) DO NOTHING;
+
+-- 17. 插入默认系统配置
+INSERT INTO system_config (key, value, description) VALUES
+  ('llm_model', 'google/gemini-2.0-flash-exp:free', '默认 LLM 模型'),
+  ('content_analysis_model', 'google/gemini-2.0-flash-exp:free', '内容分析模型'),
+  ('course_generation_model', 'anthropic/claude-3.5-sonnet', '课程生成模型'),
+  ('repository_evaluation_model', 'anthropic/claude-3.5-sonnet', '仓库评估模型'),
+  ('chat_model', 'openai/gpt-4o-mini', '聊天对话模型'),
+  ('github_search_query', 'topic:openclaw OR topic:claw-skill', 'GitHub 搜索查询'),
+  ('github_search_limit', '100', 'GitHub 搜索结果数量限制'),
+  ('auto_collect_enabled', 'true', '启用自动收集'),
+  ('auto_course_generation', 'true', '启用自动课程生成')
+ON CONFLICT (key) DO NOTHING;
+
+-- 18. 插入默认定时任务
+INSERT INTO scheduled_jobs (name, description, schedule) VALUES
+  ('collect_github', '从 GitHub 收集 OpenClaw 相关仓库和 Skill', '0 */6 * * *'),
+  ('generate_courses', '基于热门资源自动生成课程', '0 3 * * *'),
+  ('update_rankings', '更新 Skill 排行榜', '0 * * * *')
+ON CONFLICT (name) DO NOTHING;
