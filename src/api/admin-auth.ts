@@ -20,6 +20,9 @@ function isSupabaseConfigured(): boolean {
 }
 
 async function getUserEmail(): Promise<string | null> {
+  const localUser = localAuth.getCurrentUser();
+  if (localUser?.email) return localUser.email;
+
   if (isSupabaseConfigured()) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -28,8 +31,8 @@ async function getUserEmail(): Promise<string | null> {
       return null;
     }
   }
-  const user = localAuth.getCurrentUser();
-  return user?.email || null;
+
+  return null;
 }
 
 async function supabaseIsAdmin(email: string): Promise<boolean> {
