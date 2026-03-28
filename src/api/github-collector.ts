@@ -65,7 +65,7 @@ function repoToResource(repo: GitHubRepo) {
     category,
     likes: repo.stargazers_count,
     views: repo.stargazers_count * 5,
-    published_at: repo.created_at,
+    publishedat: repo.created_at,
     tags: repo.topics.slice(0, 8)
   };
 }
@@ -75,12 +75,12 @@ function repoToSkill(repo: GitHubRepo, rank: number) {
     name: repo.name,
     description: repo.description || '',
     author: repo.owner.login,
-    github_url: repo.html_url,
+    githuburl: repo.html_url,
     stars: repo.stargazers_count,
     forks: repo.forks_count,
     downloads: 0,
     issues: repo.open_issues_count,
-    last_update: repo.pushed_at,
+    lastupdate: repo.pushed_at,
     trend: 0,
     rank,
     category: categorizeRepo(repo)

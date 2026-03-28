@@ -209,15 +209,17 @@ export const contentCollectionApi = {
       const result = await collectFromGitHub();
 
       if (result.resources.length > 0) {
-        await supabase
+        const { error: resErr } = await supabase
           .from(TABLES.RESOURCES)
           .upsert(result.resources, { onConflict: 'url' });
+        if (resErr) throw new Error(`Resources upsert: ${resErr.message}`);
       }
 
       if (result.skills.length > 0) {
-        await supabase
+        const { error: skillErr } = await supabase
           .from(TABLES.SKILLS)
           .upsert(result.skills, { onConflict: 'name' });
+        if (skillErr) throw new Error(`Skills upsert: ${skillErr.message}`);
       }
 
       return { success: true, stats: result.stats };
