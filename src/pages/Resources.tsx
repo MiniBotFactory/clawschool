@@ -10,12 +10,29 @@ export default function Resources() {
   const [selectedSource, setSelectedSource] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [resources, setResources] = useState<any[]>([]);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
-  const { isLiked, isCollected, toggleLike, toggleCollect } = useInteractions();
+  const { isLiked, isCollected, toggleLike, toggleCollect, refetch } = useInteractions();
 
   useEffect(() => {
     fetchResources().then(setResources);
   }, []);
+
+  const handleToggleLike = async (resourceId: string) => {
+    if (!isAuthenticated) return;
+    setLoadingId(resourceId);
+    await toggleLike(resourceId);
+    await refetch();
+    setLoadingId(null);
+  };
+
+  const handleToggleCollect = async (resourceId: string) => {
+    if (!isAuthenticated) return;
+    setLoadingId(resourceId);
+    await toggleCollect(resourceId);
+    await refetch();
+    setLoadingId(null);
+  };
   
   const filteredResources = resources.filter(r => {
     if (selectedSource !== 'all' && r.source !== selectedSource) return false;
@@ -138,20 +155,20 @@ export default function Resources() {
                   </div>
                   <div className="resource-actions">
                     <button 
-                      className={`action-btn like ${isLiked(resource.id) ? 'active' : ''}`}
-                      onClick={() => isAuthenticated && toggleLike(resource.id)}
-                      disabled={!isAuthenticated}
+                      className={`action-btn like ${isLiked(resource.id) ? 'active' : ''} ${loadingId === resource.id ? 'loading' : ''}`}
+                      onClick={() => handleToggleLike(resource.id)}
+                      disabled={!isAuthenticated || loadingId === resource.id}
                       title={isAuthenticated ? '' : '请先登录'}
                     >
-                      {isLiked(resource.id) ? '❤️ 已赞' : '🤍 点赞'}
+                      {loadingId === resource.id ? '...' : isLiked(resource.id) ? '❤️ 已赞' : '🤍 点赞'}
                     </button>
                     <button 
-                      className={`action-btn collect ${isCollected(resource.id) ? 'active' : ''}`}
-                      onClick={() => isAuthenticated && toggleCollect(resource.id)}
-                      disabled={!isAuthenticated}
+                      className={`action-btn collect ${isCollected(resource.id) ? 'active' : ''} ${loadingId === resource.id ? 'loading' : ''}`}
+                      onClick={() => handleToggleCollect(resource.id)}
+                      disabled={!isAuthenticated || loadingId === resource.id}
                       title={isAuthenticated ? '' : '请先登录'}
                     >
-                      {isCollected(resource.id) ? '⭐ 已收藏' : '☆ 收藏'}
+                      {loadingId === resource.id ? '...' : isCollected(resource.id) ? '⭐ 已收藏' : '☆ 收藏'}
                     </button>
                   </div>
                 </div>
