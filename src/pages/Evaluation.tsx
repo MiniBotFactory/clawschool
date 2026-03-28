@@ -136,21 +136,52 @@ export default function Evaluation() {
                       
                       <div className="result-details">
                         <div className="detail-section">
-                          <h4>安全问题</h4>
-                          <ul className="detail-list">
-                            {latestEvaluation.result.securityCheck.issues.map((issue, i) => (
-                              <li key={i}>{issue}</li>
-                            ))}
-                          </ul>
+                          <h4>🔍 安全问题 ({latestEvaluation.result.securityCheck.issues.length} 项)</h4>
+                          {latestEvaluation.result.securityCheck.issues.length > 0 ? (
+                            <ul className="detail-list">
+                              {latestEvaluation.result.securityCheck.issues.map((issue, i) => (
+                                <li key={i}>{issue}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-gray">未发现安全问题</p>
+                          )}
                         </div>
                         
                         <div className="detail-section">
-                          <h4>建议</h4>
-                          <ul className="detail-list">
-                            {latestEvaluation.result.securityCheck.recommendations.map((rec, i) => (
-                              <li key={i}>{rec}</li>
-                            ))}
-                          </ul>
+                          <h4>💡 改进建议 ({latestEvaluation.result.securityCheck.recommendations.length} 项)</h4>
+                          {latestEvaluation.result.securityCheck.recommendations.length > 0 ? (
+                            <ul className="detail-list">
+                              {latestEvaluation.result.securityCheck.recommendations.map((rec, i) => (
+                                <li key={i}>{rec}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-gray">暂无建议</p>
+                          )}
+                        </div>
+
+                        <div className="detail-section">
+                          <h4>📝 代码质量</h4>
+                          <div className="quality-info">
+                            <span className="quality-score">评分: {latestEvaluation.result.codeQuality.score}/100</span>
+                            {latestEvaluation.result.codeQuality.issues.length > 0 && (
+                              <ul className="detail-list">
+                                {latestEvaluation.result.codeQuality.issues.map((issue, i) => (
+                                  <li key={i}>{issue}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="detail-section">
+                          <h4>📈 仓库活跃度</h4>
+                          <div className="activity-info">
+                            <span>最近提交: {new Date(latestEvaluation.result.activity.lastCommit).toLocaleDateString()}</span>
+                            <span>开放 Issues: {latestEvaluation.result.activity.openIssues}</span>
+                            <span>已关闭 Issues: {latestEvaluation.result.activity.closedIssues}</span>
+                          </div>
                         </div>
                       </div>
                       

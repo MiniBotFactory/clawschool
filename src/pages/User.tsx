@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isCurrentUserAdmin } from '../api/admin-auth';
 import { fetchCourseSets } from '../api/data-service';
-import { useInteractions, useCompletedCourses } from '../hooks/useUserData';
+import { useInteractions, useCompletedCourses, useEvaluations } from '../hooks/useUserData';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
 import './User.css';
@@ -30,8 +30,9 @@ export default function User() {
   const [completedCourseSetIds, setCompletedCourseSetIds] = useState<string[]>([]);
   const [courseSets, setCourseSets] = useState<any[]>([]);
 
-  const { isSubscribed } = useInteractions();
+  const { isSubscribed, interactions } = useInteractions();
   const { completedCourseSets: completedIds } = useCompletedCourses();
+  const { evaluations } = useEvaluations();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -130,12 +131,12 @@ export default function User() {
                 </div>
                 <div className="stat-card">
                   <span className="stat-icon">❤️</span>
-                  <span className="stat-value">-</span>
+                  <span className="stat-value">{interactions.filter(i => i.type === 'like').length}</span>
                   <span className="stat-label">点赞资源</span>
                 </div>
                 <div className="stat-card">
                   <span className="stat-icon">🛡️</span>
-                  <span className="stat-value">-</span>
+                  <span className="stat-value">{evaluations.length}</span>
                   <span className="stat-label">提交评估</span>
                 </div>
               </div>
