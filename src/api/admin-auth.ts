@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { auth as localAuth } from './storage';
 
 const DEFAULT_ADMIN_EMAIL = 'wmango@hotmail.com';
@@ -14,25 +14,18 @@ export interface AdminUser {
   lastLogin?: string;
 }
 
-function isSupabaseConfigured(): boolean {
-  const url = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
-  return !!url;
-}
-
 async function getUserEmail(): Promise<string | null> {
-  const localUser = localAuth.getCurrentUser();
-  if (localUser?.email) return localUser.email;
-
   if (isSupabaseConfigured()) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      return user?.email || null;
+      if (user?.email) return user.email;
     } catch {
-      return null;
+      // Supabase Auth 失败，降级到 localStorage
     }
   }
 
-  return null;
+  const localUser = localAuth.getCurrentUser();
+  return localUser?.email || null;
 }
 
 async function supabaseIsAdmin(email: string): Promise<boolean> {

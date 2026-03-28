@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '../types';
-import { auth } from '../api/storage';
+import { supabase, isSupabaseConfigured } from '../api/supabase';
+import { auth as localAuth } from '../api/storage';
 
 interface AuthContextType {
   user: User | null;
@@ -9,34 +10,78 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
-  refreshUser: () => void;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function supabaseUserToAppUser(sbUser: any): User {
+  return {
+    id: sbUser.id,
+    email: sbUser.email,
+    name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || '',
+    avatar: sbUser.user_metadata?.avatar_url,
+    createdAt: sbUser.created_at,
+    stats: {
+      coursesCompleted: 0,
+      resourcesLiked: 0,
+      resourcesCollected: 0,
+      evaluationsSubmitted: 0,
+      courseSetsSubscribed: 0
+    }
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 初始化时检查是否已登录
-    const currentUser = auth.getCurrentUser();
-    setUser(currentUser);
-    setIsLoading(false);
+    if (isSupabaseConfigured()) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (_event: string, session: any) => {
+          if (session?.user) {
+            setUser(supabaseUserToAppUser(session.user));
+          } else {
+            const localUser = localAuth.getCurrentUser();
+            setUser(localUser);
+          }
+          setIsLoading(false);
+        }
+      );
+
+      return () => subscription.unsubscribe();
+    } else {
+      const localUser = localAuth.getCurrentUser();
+      setUser(localUser);
+      setIsLoading(false);
+    }
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const result = await auth.login(email, password);
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          return { success: false, error: error.message };
+        }
+        if (data.user) {
+          setUser(supabaseUserToAppUser(data.user));
+          return { success: true };
+        }
+        return { success: false, error: '登录失败' };
+      }
+
+      const result = await localAuth.login(email, password);
       if (result.success && result.data) {
         setUser(result.data);
         return { success: true };
       }
-      return { success: false, error: result.error || 'Login failed' };
-    } catch (error) {
-      return { success: false, error: 'Login failed' };
+      return { success: false, error: result.error || '登录失败' };
+    } catch {
+      return { success: false, error: '登录失败' };
     } finally {
       setIsLoading(false);
     }
@@ -45,27 +90,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      const result = await auth.register(email, password, name);
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name } }
+        });
+        if (error) {
+          return { success: false, error: error.message };
+        }
+        if (data.user) {
+          setUser(supabaseUserToAppUser(data.user));
+          return { success: true };
+        }
+        return { success: false, error: '注册失败' };
+      }
+
+      const result = await localAuth.register(email, password, name);
       if (result.success && result.data) {
         setUser(result.data);
         return { success: true };
       }
-      return { success: false, error: result.error || 'Registration failed' };
-    } catch (error) {
-      return { success: false, error: 'Registration failed' };
+      return { success: false, error: result.error || '注册失败' };
+    } catch {
+      return { success: false, error: '注册失败' };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    auth.logout();
+  const logout = async () => {
+    if (isSupabaseConfigured()) {
+      await supabase.auth.signOut();
+    }
+    localAuth.logout();
     setUser(null);
   };
 
-  const refreshUser = () => {
-    const currentUser = auth.getCurrentUser();
-    setUser(currentUser);
+  const refreshUser = async () => {
+    if (isSupabaseConfigured()) {
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
+      if (sbUser) {
+        setUser(supabaseUserToAppUser(sbUser));
+        return;
+      }
+    }
+    const localUser = localAuth.getCurrentUser();
+    setUser(localUser);
   };
 
   return (
