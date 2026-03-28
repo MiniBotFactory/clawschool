@@ -1,55 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
-import { supabase, TABLES } from '../../api/supabase';
+import { fetchStats } from '../../api/data-service';
 import './AdminDashboard.css';
 
-interface DashboardStats {
-  resources: number;
-  skills: number;
-  courseSets: number;
-  users: number;
-  evaluations: number;
-}
-
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    resources: 0,
-    skills: 0,
-    courseSets: 0,
-    users: 0,
-    evaluations: 0
-  });
+  const [stats, setStats] = useState({ resources: 0, skills: 0, courseSets: 0, evaluations: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    setIsLoading(true);
-    try {
-      const [resources, skills, courseSets, users, evaluations] = await Promise.all([
-        supabase.from(TABLES.RESOURCES).select('*', { count: 'exact', head: true }),
-        supabase.from(TABLES.SKILLS).select('*', { count: 'exact', head: true }),
-        supabase.from(TABLES.COURSE_SETS).select('*', { count: 'exact', head: true }),
-        supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
-        supabase.from(TABLES.EVALUATIONS).select('*', { count: 'exact', head: true })
-      ]);
-
-      setStats({
-        resources: resources.count || 0,
-        skills: skills.count || 0,
-        courseSets: courseSets.count || 0,
-        users: users.count || 0,
-        evaluations: evaluations.count || 0
-      });
-    } catch (err) {
-      console.error('Error loading stats:', err);
-    } finally {
+    fetchStats().then(data => {
+      setStats(data);
       setIsLoading(false);
-    }
-  };
+    });
+  }, []);
 
   return (
     <AdminLayout>
@@ -86,12 +50,6 @@ export default function AdminDashboard() {
                 <div className="stat-value">{stats.courseSets}</div>
                 <div className="stat-label">课程集</div>
                 <Link to="/course-sets" className="stat-link">查看全部 →</Link>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon">👥</div>
-                <div className="stat-value">{stats.users}</div>
-                <div className="stat-label">注册用户</div>
               </div>
 
               <div className="stat-card">

@@ -1,19 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useInteractions } from '../hooks/useUserData';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
-import { courseSets } from '../data/content';
+import { fetchCourseSets } from '../api/data-service';
 import './CourseSets.css';
 
 export default function CourseSets() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [courseSets, setCourseSets] = useState<any[]>([]);
   const { isAuthenticated } = useAuth();
   const { isSubscribed, toggleSubscribe } = useInteractions();
+
+  useEffect(() => {
+    fetchCourseSets().then(setCourseSets);
+  }, []);
   
   const filteredSets = selectedCategory === 'all' 
     ? courseSets 
-    : courseSets.filter(s => s.category === selectedCategory);
+    : courseSets.filter((s: any) => s.category === selectedCategory);
   
   const categoryLabels: Record<string, string> = {
     beginner: '入门',
@@ -99,7 +104,7 @@ export default function CourseSets() {
                 </div>
                 
                 <div className="course-set-courses">
-                  {set.courses.slice(0, 3).map((course, i) => (
+                  {set.courses.slice(0, 3).map((course: any, i: number) => (
                     <div key={course.id} className="mini-course">
                       <span className="mini-course-index">{i + 1}</span>
                       <span className="mini-course-title">{course.title}</span>

@@ -1,10 +1,21 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
-import { resources, courseSets, skills } from '../data/content';
+import { fetchResources, fetchSkills, fetchCourseSets } from '../api/data-service';
 import './Home.css';
 
 export default function Home() {
+  const [resources, setResources] = useState<any[]>([]);
+  const [skills, setSkills] = useState<any[]>([]);
+  const [courseSets, setCourseSets] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchResources({ limit: 10 }).then(setResources);
+    fetchSkills({ limit: 10 }).then(setSkills);
+    fetchCourseSets().then(setCourseSets);
+  }, []);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',

@@ -1,18 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
-import { skills } from '../data/content';
+import { fetchSkills } from '../api/data-service';
 import './Skills.css';
 
 export default function Skills() {
   const [sortBy, setSortBy] = useState<'rank' | 'stars' | 'downloads' | 'trend'>('rank');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  
-  const categories = [...new Set(skills.map(s => s.category))];
+  const [skills, setSkills] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchSkills().then(setSkills);
+  }, []);
+
+  const categories = [...new Set(skills.map((s: any) => s.category))];
   
   const sortedSkills = [...skills]
-    .filter(s => selectedCategory === 'all' || s.category === selectedCategory)
-    .sort((a, b) => {
+    .filter((s: any) => selectedCategory === 'all' || s.category === selectedCategory)
+    .sort((a: any, b: any) => {
       switch (sortBy) {
         case 'stars': return b.stars - a.stars;
         case 'downloads': return b.downloads - a.downloads;

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useInteractions } from '../hooks/useUserData';
-import { resources, courseSets } from '../data/content';
+import { fetchResources, fetchCourseSets } from '../api/data-service';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
 import './UserCollections.css';
@@ -10,17 +10,17 @@ import './UserCollections.css';
 export default function UserCollections() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { 
-    isLiked, 
-    isCollected, 
-    isSubscribed, 
-    toggleLike, 
-    toggleCollect, 
-    toggleSubscribe 
-  } = useInteractions();
-  
+  const { isLiked, isCollected, isSubscribed, toggleLike, toggleCollect, toggleSubscribe } = useInteractions();
+
+  const [resources, setResources] = useState<any[]>([]);
+  const [courseSets, setCourseSets] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'liked' | 'collected' | 'subscribed'>('collected');
   
+  useEffect(() => {
+    fetchResources().then(setResources);
+    fetchCourseSets().then(setCourseSets);
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/user');
@@ -220,7 +220,7 @@ export default function UserCollections() {
                         </div>
                         
                         <div className="course-set-courses">
-                          {courseSet.courses.slice(0, 3).map((course, i) => (
+                          {courseSet.courses.slice(0, 3).map((course: any, i: number) => (
                             <div key={course.id} className="mini-course">
                               <span className="mini-course-index">{i + 1}</span>
                               <span className="mini-course-title">{course.title}</span>

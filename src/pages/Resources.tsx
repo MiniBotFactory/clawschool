@@ -1,16 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useInteractions } from '../hooks/useUserData';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
-import { resources } from '../data/content';
+import { fetchResources } from '../api/data-service';
 import './Resources.css';
 
 export default function Resources() {
   const [selectedSource, setSelectedSource] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [resources, setResources] = useState<any[]>([]);
   const { isAuthenticated } = useAuth();
   const { isLiked, isCollected, toggleLike, toggleCollect } = useInteractions();
+
+  useEffect(() => {
+    fetchResources().then(setResources);
+  }, []);
   
   const filteredResources = resources.filter(r => {
     if (selectedSource !== 'all' && r.source !== selectedSource) return false;
@@ -121,7 +126,7 @@ export default function Resources() {
                 <p className="resource-desc">{resource.description}</p>
                 
                 <div className="resource-tags">
-                  {resource.tags.map(tag => (
+                  {resource.tags.map((tag: string) => (
                     <span key={tag} className="tag">{tag}</span>
                   ))}
                 </div>
