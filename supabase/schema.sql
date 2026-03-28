@@ -142,7 +142,24 @@ ALTER TABLE user_interactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE evaluations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE content_queue ENABLE ROW LEVEL SECURITY;
 
--- 公开读取资源、skills、课程集
+DROP POLICY IF EXISTS "Public read resources" ON resources;
+DROP POLICY IF EXISTS "Public read skills" ON skills;
+DROP POLICY IF EXISTS "Public read course_sets" ON course_sets;
+DROP POLICY IF EXISTS "Public read courses" ON courses;
+DROP POLICY IF EXISTS "Service can insert resources" ON resources;
+DROP POLICY IF EXISTS "Service can insert skills" ON skills;
+DROP POLICY IF EXISTS "Service can update skills" ON skills;
+DROP POLICY IF EXISTS "Service can insert course_sets" ON course_sets;
+DROP POLICY IF EXISTS "Service can insert courses" ON courses;
+DROP POLICY IF EXISTS "Public read evaluations" ON evaluations;
+DROP POLICY IF EXISTS "Users can read own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can read own interactions" ON user_interactions;
+DROP POLICY IF EXISTS "Users can insert own interactions" ON user_interactions;
+DROP POLICY IF EXISTS "Users can delete own interactions" ON user_interactions;
+DROP POLICY IF EXISTS "Users can read own evaluations" ON evaluations;
+DROP POLICY IF EXISTS "Users can insert own evaluations" ON evaluations;
+
 CREATE POLICY "Public read resources" ON resources FOR SELECT USING (true);
 CREATE POLICY "Public read skills" ON skills FOR SELECT USING (true);
 CREATE POLICY "Public read course_sets" ON course_sets FOR SELECT USING (true);
@@ -156,7 +173,6 @@ CREATE POLICY "Service can insert courses" ON courses FOR INSERT WITH CHECK (tru
 
 CREATE POLICY "Public read evaluations" ON evaluations FOR SELECT USING (true);
 
--- 用户只能访问自己的数据
 CREATE POLICY "Users can read own profile" ON user_profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON user_profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can read own interactions" ON user_interactions FOR SELECT USING (auth.uid() = user_id);
@@ -252,6 +268,15 @@ ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scheduled_jobs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can read admins" ON admins;
+DROP POLICY IF EXISTS "Super admin can insert" ON admins;
+DROP POLICY IF EXISTS "Super admin can update" ON admins;
+DROP POLICY IF EXISTS "Super admin can delete" ON admins;
+DROP POLICY IF EXISTS "Anyone can read config" ON system_config;
+DROP POLICY IF EXISTS "Super admin can update config" ON system_config;
+DROP POLICY IF EXISTS "Anyone can read jobs" ON scheduled_jobs;
+DROP POLICY IF EXISTS "Super admin can update jobs" ON scheduled_jobs;
+
 CREATE POLICY "Anyone can read admins" ON admins FOR SELECT USING (true);
 CREATE POLICY "Super admin can insert" ON admins FOR INSERT WITH CHECK (auth.jwt() ->> 'email' = 'wmango@hotmail.com');
 CREATE POLICY "Super admin can update" ON admins FOR UPDATE USING (auth.jwt() ->> 'email' = 'wmango@hotmail.com');
@@ -309,6 +334,9 @@ CREATE INDEX IF NOT EXISTS idx_execution_logs_action ON execution_logs(action);
 CREATE INDEX IF NOT EXISTS idx_execution_logs_created_at ON execution_logs(created_at DESC);
 
 ALTER TABLE execution_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read logs" ON execution_logs;
+DROP POLICY IF EXISTS "Service can insert logs" ON execution_logs;
 
 CREATE POLICY "Anyone can read logs" ON execution_logs FOR SELECT USING (true);
 CREATE POLICY "Service can insert logs" ON execution_logs FOR INSERT WITH CHECK (true);
