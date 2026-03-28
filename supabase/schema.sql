@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS resources (
 -- 2. Skills 表
 CREATE TABLE IF NOT EXISTS skills (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
   description TEXT,
   author TEXT,
   githuburl TEXT,
@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS skills (
   language TEXT,
   topics TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(name, author)
 );
 
 -- 3. 课程集表
@@ -293,3 +294,21 @@ INSERT INTO scheduled_jobs (name, description, schedule) VALUES
   ('generate_courses', '基于热门资源自动生成课程', '0 3 * * *'),
   ('update_rankings', '更新 Skill 排行榜', '0 * * * *')
 ON CONFLICT (name) DO NOTHING;
+
+-- 19. 执行日志表
+CREATE TABLE IF NOT EXISTS execution_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  action TEXT NOT NULL,
+  status TEXT CHECK (status IN ('running', 'success', 'failed')) NOT NULL,
+  message TEXT,
+  stats JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_execution_logs_action ON execution_logs(action);
+CREATE INDEX IF NOT EXISTS idx_execution_logs_created_at ON execution_logs(created_at DESC);
+
+ALTER TABLE execution_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can read logs" ON execution_logs FOR SELECT USING (true);
+CREATE POLICY "Service can insert logs" ON execution_logs FOR INSERT WITH CHECK (true);

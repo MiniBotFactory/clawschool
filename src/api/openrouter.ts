@@ -263,3 +263,42 @@ ${readme.slice(0, 2000)}
     };
   }
 }
+
+export async function filterResource(title: string, description: string): Promise<{
+  isRelevant: boolean;
+  relevanceScore: number;
+  reason: string;
+}> {
+  const config = getContentAnalysisModel();
+  
+  const prompt = `判断以下 GitHub 仓库是否与 AI agent/工具相关。
+
+相关主题包括：
+- AI Agent 框架 (OpenClaw, CrewAI, AutoGen, LangGraph, Semantic Kernel)
+- AI 代码工具 (OpenCode, Claude, Cursor, Codex, Copilot)
+- LLM 应用框架
+- AI 自动化工具
+- 多 Agent 系统
+- AI Skills/Plugins
+
+仓库信息：
+标题: ${title}
+描述: ${description}
+
+返回 JSON:
+{
+  "isRelevant": true/false,
+  "relevanceScore": 0-100,
+  "reason": "判断理由"
+}`;
+
+  try {
+    const response = await chatCompletion(
+      [{ role: 'user', content: prompt }],
+      { model: config.model, temperature: 0.2, maxTokens: 500 }
+    );
+    return JSON.parse(response);
+  } catch {
+    return { isRelevant: true, relevanceScore: 50, reason: '过滤失败，默认通过' };
+  }
+}

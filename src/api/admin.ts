@@ -1,7 +1,7 @@
 import { supabase, TABLES } from './supabase';
 import { checkPermission } from './admin-auth';
 import { collectFromGitHub } from './github-collector';
-import { generateCourseOutline } from './openrouter';
+import { generateCourseOutline, filterResource } from './openrouter';
 
 export interface SystemConfig {
   id: string;
@@ -170,7 +170,7 @@ export const jobSchedulerApi = {
 
       switch (job.name) {
         case 'collect_github':
-          result = await collectFromGitHub();
+          result = await collectFromGitHubJob();
           break;
         case 'generate_courses':
           result = await generateCoursesJob();
@@ -207,22 +207,62 @@ export const contentCollectionApi = {
 
     try {
       const result = await collectFromGitHub();
+      let filteredResources = result.resources;
+      let filteredSkills = result.skills;
+      let filteredCount = 0;
 
-      if (result.resources.length > 0) {
+      // LLM 过滤：检查内容是否与 AI agent 相关
+      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      if (apiKey && result.resources.length > 0) {
+        const relevantResources: typeof result.resources = [];
+        const relevantSkills: typeof result.skills = [];
+
+        for (let i = 0; i < result.resources.length; i++) {
+          const resource = result.resources[i];
+          try {
+            const filter = await filterResource(resource.title, resource.description);
+            if (filter.isRelevant && filter.relevanceScore >= 50) {
+              relevantResources.push(resource);
+              if (result.skills[i]) {
+                relevantSkills.push(result.skills[i]);
+              }
+            } else {
+              filteredCount++;
+            }
+          } catch {
+            relevantResources.push(resource);
+            if (result.skills[i]) {
+              relevantSkills.push(result.skills[i]);
+            }
+          }
+        }
+
+        filteredResources = relevantResources;
+        filteredSkills = relevantSkills;
+      }
+
+      if (filteredResources.length > 0) {
         const { error: resErr } = await supabase
           .from(TABLES.RESOURCES)
-          .insert(result.resources);
-        if (resErr) throw new Error(`Resources insert: ${resErr.message}`);
+          .upsert(filteredResources, { onConflict: 'url' });
+        if (resErr) throw new Error(`Resources upsert: ${resErr.message}`);
       }
 
-      if (result.skills.length > 0) {
+      if (filteredSkills.length > 0) {
         const { error: skillErr } = await supabase
           .from(TABLES.SKILLS)
-          .insert(result.skills);
-        if (skillErr) throw new Error(`Skills insert: ${skillErr.message}`);
+          .upsert(filteredSkills, { onConflict: 'name,author' });
+        if (skillErr) throw new Error(`Skills upsert: ${skillErr.message}`);
       }
 
-      return { success: true, stats: result.stats };
+      return {
+        success: true,
+        stats: {
+          total: filteredResources.length,
+          filtered: filteredCount,
+          errors: result.stats.errors
+        }
+      };
     } catch (err) {
       return { success: false, error: String(err) };
     }
@@ -234,8 +274,8 @@ export const contentCollectionApi = {
     }
 
     try {
-      const result = await generateCoursesJob();
-      return { success: true, count: result };
+      const count = await generateCoursesJob();
+      return { success: true, count };
     } catch (err) {
       return { success: false, error: String(err) };
     }
@@ -247,13 +287,31 @@ export const contentCollectionApi = {
     }
 
     try {
-      const result = await updateRankingsJob();
-      return { success: true, count: result };
+      const count = await updateRankingsJob();
+      return { success: true, count };
     } catch (err) {
       return { success: false, error: String(err) };
     }
   }
 };
+
+async function collectFromGitHubJob() {
+  const result = await collectFromGitHub();
+
+  if (result.resources.length > 0) {
+    await supabase
+      .from(TABLES.RESOURCES)
+      .upsert(result.resources, { onConflict: 'url' });
+  }
+
+  if (result.skills.length > 0) {
+    await supabase
+      .from(TABLES.SKILLS)
+      .upsert(result.skills, { onConflict: 'name,author' });
+  }
+
+  return result.stats;
+}
 
 async function generateCoursesJob(): Promise<number> {
   const { data: resources } = await supabase
@@ -283,13 +341,7 @@ async function generateCoursesJob(): Promise<number> {
         title: outline.title,
         description: outline.description,
         icon: '📚',
-        category: 'beginner',
-        courses: outline.lessons.map((lesson, index) => ({
-          id: `${resource.id}-${index}`,
-          title: lesson.title,
-          description: lesson.description,
-          order: index
-        }))
+        category: 'beginner'
       });
 
     count++;
