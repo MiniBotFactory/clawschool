@@ -84,3 +84,31 @@
   font-size: 0.875rem;
   color: #4b5563;
 }
+
+.sources-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.source-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.source-icon {
+  font-size: 1.5rem;
+}
+
+.source-details strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.source-details p {
+  margin: 0;
+}

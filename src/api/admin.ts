@@ -1,6 +1,7 @@
 import { supabase, TABLES } from './supabase';
 import { checkPermission } from './admin-auth';
 import { collectFromGitHub } from './github-collector';
+import { collectFromAllSources, discoverNewSources } from './content-collector';
 import { generateCourseOutline, filterResource } from './openrouter';
 
 export interface SystemConfig {
@@ -211,7 +212,6 @@ export const contentCollectionApi = {
       let filteredSkills = result.skills;
       let filteredCount = 0;
 
-      // LLM 过滤：检查内容是否与 AI agent 相关
       const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
       if (apiKey && result.resources.length > 0) {
         const relevantResources: typeof result.resources = [];
@@ -263,6 +263,42 @@ export const contentCollectionApi = {
           errors: result.stats.errors
         }
       };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  },
+
+  async collectAllSources(): Promise<{ success: boolean; stats?: any; error?: string }> {
+    if (!(await checkPermission('write'))) {
+      return { success: false, error: '没有权限执行内容收集' };
+    }
+
+    try {
+      const result = await collectFromAllSources();
+
+      return {
+        success: true,
+        stats: {
+          total: result.resources.length,
+          github: result.stats.github,
+          youtube: result.stats.youtube,
+          blog: result.stats.blog,
+          community: result.stats.community
+        }
+      };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  },
+
+  async discoverSources(): Promise<{ success: boolean; sources?: any[]; error?: string }> {
+    if (!(await checkPermission('write'))) {
+      return { success: false, error: '没有权限发现新源' };
+    }
+
+    try {
+      const sources = await discoverNewSources();
+      return { success: true, sources };
     } catch (err) {
       return { success: false, error: String(err) };
     }

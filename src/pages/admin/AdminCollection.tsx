@@ -13,6 +13,7 @@ interface CollectionLog {
 
 export default function AdminCollection() {
   const [isCollecting, setIsCollecting] = useState(false);
+  const [isCollectingAll, setIsCollectingAll] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [logs, setLogs] = useState<CollectionLog[]>([]);
@@ -42,6 +43,25 @@ export default function AdminCollection() {
       addLog('GitHub 收集', 'error', String(err));
     } finally {
       setIsCollecting(false);
+    }
+  };
+
+  const handleCollectAllSources = async () => {
+    setIsCollectingAll(true);
+    addLog('多源收集', 'running', '正在从 GitHub/YouTube/博客/社区 收集...');
+
+    try {
+      const result = await contentCollectionApi.collectAllSources();
+      if (result.success) {
+        const s = result.stats || {};
+        addLog('多源收集', 'success', `收集完成: GitHub ${s.github || 0}, YouTube ${s.youtube || 0}, 博客 ${s.blog || 0}, 社区 ${s.community || 0}`);
+      } else {
+        addLog('多源收集', 'error', result.error || '收集失败');
+      }
+    } catch (err) {
+      addLog('多源收集', 'error', String(err));
+    } finally {
+      setIsCollectingAll(false);
     }
   };
 
@@ -98,25 +118,38 @@ export default function AdminCollection() {
         </div>
 
         <div className="collection-actions">
-          <div className="collection-card admin-card">
-            <div className="collection-icon">🐙</div>
-            <h3>GitHub 资源收集</h3>
-            <p>搜索 OpenClaw 相关仓库，使用 AI 分析质量后入库</p>
+          <div className="collection-card card">
+            <div className="collection-icon">🌐</div>
+            <h3>多源收集</h3>
+            <p>从 GitHub、YouTube、博客、社区收集 OpenClaw 内容</p>
             <button
-              className="admin-btn admin-btn-primary"
-              onClick={handleCollectGitHub}
-              disabled={isCollecting}
+              className="btn btn-primary"
+              onClick={handleCollectAllSources}
+              disabled={isCollectingAll}
             >
-              {isCollecting ? '收集中...' : '立即收集'}
+              {isCollectingAll ? '收集中...' : '立即收集'}
             </button>
           </div>
 
-          <div className="collection-card admin-card">
+          <div className="collection-card card">
+            <div className="collection-icon">🐙</div>
+            <h3>仅 GitHub</h3>
+            <p>只从 GitHub 搜索 OpenClaw 仓库</p>
+            <button
+              className="btn btn-secondary"
+              onClick={handleCollectGitHub}
+              disabled={isCollecting}
+            >
+              {isCollecting ? '收集中...' : 'GitHub 收集'}
+            </button>
+          </div>
+
+          <div className="collection-card card">
             <div className="collection-icon">📚</div>
             <h3>AI 课程生成</h3>
-            <p>基于热门资源自动生成课程大纲和内容</p>
+            <p>基于热门资源自动生成课程大纲</p>
             <button
-              className="admin-btn admin-btn-success"
+              className="btn btn-success"
               onClick={handleGenerateCourses}
               disabled={isGenerating}
             >
@@ -124,18 +157,55 @@ export default function AdminCollection() {
             </button>
           </div>
 
-          <div className="collection-card admin-card">
+          <div className="collection-card card">
             <div className="collection-icon">🏆</div>
             <h3>排名更新</h3>
-            <p>根据 Stars、下载量等指标重新计算 Skill 排名</p>
+            <p>根据 Stars、下载量重新计算 Skill 排名</p>
             <button
-              className="admin-btn admin-btn-warning"
+              className="btn btn-warning"
               onClick={handleUpdateRankings}
               disabled={isUpdating}
             >
               {isUpdating ? '更新中...' : '立即更新'}
             </button>
           </div>
+        </div>
+
+        <div className="admin-card">
+          <h2>数据源列表</h2>
+          <div className="sources-info">
+            <div className="source-item">
+              <span className="source-icon">🐙</span>
+              <div className="source-details">
+                <strong>GitHub</strong>
+                <p className="text-gray">搜索 OpenClaw 仓库、Skills</p>
+              </div>
+            </div>
+            <div className="source-item">
+              <span className="source-icon">📺</span>
+              <div className="source-details">
+                <strong>YouTube</strong>
+                <p className="text-gray">OpenClaw 教程、安装指南视频</p>
+              </div>
+            </div>
+            <div className="source-item">
+              <span className="source-icon">📝</span>
+              <div className="source-details">
+                <strong>博客 RSS</strong>
+                <p className="text-gray">技术博客、官方文档更新</p>
+              </div>
+            </div>
+            <div className="source-item">
+              <span className="source-icon">💬</span>
+              <div className="source-details">
+                <strong>社区</strong>
+                <p className="text-gray">Reddit r/openclaw, r/AIAgents</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-gray" style={{ marginTop: '16px' }}>
+            提示：需要配置 VITE_YOUTUBE_API_KEY 才能收集 YouTube 数据
+          </p>
         </div>
 
         <div className="admin-card">
