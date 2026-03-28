@@ -97,20 +97,32 @@ export async function collectFromGitHub(): Promise<{
   let errors = 0;
 
   const queries = [
-    'ai-agent framework stars:>100',
-    'llm agent orchestration stars:>50',
-    'claude agent automation stars:>30',
-    'gpt agent tools stars:>50',
-    'autogen OR crewai OR langgraph agent'
+    'ai-agent framework',
+    'llm agent',
+    'autonomous agent',
+    'ai assistant framework',
+    'chatbot framework',
+    'langchain',
+    'autogen',
+    'crewai',
+    'semantic-kernel',
+    'agent-based',
+    'multi-agent',
+    'ai-tools python',
+    'llm-tools',
+    'gpt-agent',
+    'claude-agent'
   ];
+
+  const seen = new Set<string>();
 
   for (const query of queries) {
     try {
       const searchParams = new URLSearchParams({
-        q: query,
+        q: `${query} stars:>50`,
         sort: 'stars',
         order: 'desc',
-        per_page: '20'
+        per_page: '10'
       });
 
       const data = await githubFetch<{ items: GitHubRepo[] }>(
@@ -118,11 +130,12 @@ export async function collectFromGitHub(): Promise<{
       );
 
       if (data.items) {
-        for (let i = 0; i < data.items.length; i++) {
-          const repo = data.items[i];
+        for (const repo of data.items) {
+          if (seen.has(repo.html_url)) continue;
+          seen.add(repo.html_url);
           try {
             resources.push(repoToResource(repo));
-            skills.push(repoToSkill(repo, resources.length));
+            skills.push(repoToSkill(repo, skills.length + 1));
           } catch {
             errors++;
           }
