@@ -35,11 +35,75 @@ export async function fetchSkills(filters?: { category?: string; sortBy?: string
 export async function fetchCourseSets(filters?: { category?: string }) {
   let query = supabase.from(TABLES.COURSE_SETS).select('*');
   if (filters?.category) query = query.eq('category', filters.category);
-  const { data } = await query;
-  return (data || []).map(cs => ({
-    id: cs.id, title: cs.title, description: cs.description || '', icon: cs.icon || '📚',
-    category: cs.category, subscribers: cs.subscribers || 0, courseCount: 0, courses: []
+  const { data: courseSets } = await query;
+  
+  if (!courseSets || courseSets.length === 0) return [];
+  
+  const courseSetIds = courseSets.map(cs => cs.id);
+  const { data: allCourses } = await supabase
+    .from(TABLES.COURSES)
+    .select('*')
+    .in('course_set_id', courseSetIds)
+    .order('order', { ascending: true });
+  
+  const coursesBySet: Record<string, any[]> = {};
+  (allCourses || []).forEach(course => {
+    if (!coursesBySet[course.course_set_id]) {
+      coursesBySet[course.course_set_id] = [];
+    }
+    coursesBySet[course.course_set_id].push({
+      id: course.id,
+      title: course.title,
+      description: course.description || '',
+      category: course.category,
+      duration: course.duration || '',
+      content: course.content || '',
+      order: course.order || 0
+    });
+  });
+  
+  return courseSets.map(cs => ({
+    id: cs.id, 
+    title: cs.title, 
+    description: cs.description || '', 
+    icon: cs.icon || '📚',
+    category: cs.category, 
+    subscribers: cs.subscribers || 0, 
+    courseCount: coursesBySet[cs.id]?.length || 0, 
+    courses: coursesBySet[cs.id] || []
   }));
+}
+
+export async function fetchCourse(courseId: string) {
+  const { data: course } = await supabase
+    .from(TABLES.COURSES)
+    .select('*')
+    .eq('id', courseId)
+    .single();
+  
+  if (!course) return null;
+  
+  const { data: courseSet } = await supabase
+    .from(TABLES.COURSE_SETS)
+    .select('*')
+    .eq('id', course.course_set_id)
+    .single();
+  
+  return {
+    id: course.id,
+    title: course.title,
+    description: course.description || '',
+    category: course.category,
+    duration: course.duration || '',
+    content: course.content || '',
+    order: course.order || 0,
+    courseSetId: course.course_set_id,
+    courseSet: courseSet ? {
+      id: courseSet.id,
+      title: courseSet.title,
+      icon: courseSet.icon || '📚'
+    } : null
+  };
 }
 
 export async function fetchStats() {

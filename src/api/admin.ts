@@ -475,20 +475,114 @@ async function generateCoursesJob(): Promise<number> {
     if (existing) continue;
 
     const outline = await generateCourseOutline(resource.title, 'beginner');
+    
+    const category = outline.title.toLowerCase().includes('install') || outline.title.toLowerCase().includes('入门') 
+      ? 'beginner' 
+      : outline.title.toLowerCase().includes('advanced') || outline.title.toLowerCase().includes('进阶')
+        ? 'intermediate'
+        : 'beginner';
 
-    await supabase
+    const { data: newCourseSet } = await supabase
       .from(TABLES.COURSE_SETS)
       .insert({
         title: outline.title,
         description: outline.description,
-        icon: '📚',
-        category: 'beginner'
-      });
+        icon: outline.title.toLowerCase().includes('install') || outline.title.toLowerCase().includes('入门') ? '🚀' :
+               outline.title.toLowerCase().includes('skill') || outline.title.toLowerCase().includes('开发') ? '⚙️' :
+               outline.title.toLowerCase().includes('安全') ? '🛡️' : '📚',
+        category
+      })
+      .select()
+      .single();
+
+    if (!newCourseSet) continue;
+
+    for (let i = 0; i < outline.lessons.length; i++) {
+      const lesson = outline.lessons[i];
+      const courseContent = generateHandsOnLab(lesson.title, lesson.description, resource);
+      
+      await supabase
+        .from(TABLES.COURSES)
+        .insert({
+          course_set_id: newCourseSet.id,
+          title: lesson.title,
+          description: lesson.description,
+          category: i === 0 ? 'installation' : i < 3 ? 'basic' : 'advanced',
+          duration: `${5 + Math.floor(Math.random() * 15)} 分钟`,
+          content: courseContent,
+          order: i + 1
+        });
+    }
 
     count++;
   }
 
   return count;
+}
+
+function generateHandsOnLab(lessonTitle: string, lessonDescription: string, resource: any): string {
+  const repoName = resource.title || resource.url?.split('/').pop() || 'this project';
+  const repoUrl = resource.url || `https://github.com/${repoName}`;
+  
+  return `# ${lessonTitle}
+
+## 目标
+${lessonDescription}
+
+## 准备工作
+- 访问项目仓库: ${repoUrl}
+- 确保已安装 OpenClaw CLI
+- 准备一个代码编辑器
+
+## 步骤
+
+### 1. 了解项目
+阅读 ${repoName} 的 README 文档，了解：
+- 项目的主要功能
+- 核心概念
+- 基本使用方式
+
+### 2. 实践操作
+\`\`\`bash
+# 克隆项目
+git clone ${repoUrl}
+
+# 进入目录
+cd ${repoName.replace('/', '-')}
+
+# 查看项目结构
+ls -la
+\`\`\`
+
+### 3. 动手实验
+根据项目文档，尝试以下操作：
+
+1. **配置环境**
+   按照 README 中的说明配置必要的环境变量
+
+2. **运行示例**
+   尝试运行项目提供的示例代码
+
+3. **观察结果**
+   记录运行过程中的输出和反馈
+
+## 扩展练习
+- 尝试修改示例代码中的参数
+- 结合 OpenClaw 框架扩展项目功能
+- 为项目提交一个改进建议
+
+## 常见问题
+
+### Q: 运行失败怎么办？
+A: 检查依赖是否正确安装，确认 Node.js 版本是否符合要求。
+
+### Q: 如何获取更多帮助？
+A: 访问 ${repoUrl} 查看完整的文档和社区支持。
+
+---
+
+*本课程由 ClawSchool AI 自动生成，基于 ${repoName} 项目*
+`;
 }
 
 async function updateRankingsJob(): Promise<number> {

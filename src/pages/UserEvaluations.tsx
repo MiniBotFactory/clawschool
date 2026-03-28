@@ -9,7 +9,7 @@ import './UserEvaluations.css';
 export default function UserEvaluations() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { evaluations, refreshEvaluations } = useEvaluations();
+  const { evaluations, refetch: refreshEvaluations } = useEvaluations();
   
   useEffect(() => {
     if (!isAuthenticated) {

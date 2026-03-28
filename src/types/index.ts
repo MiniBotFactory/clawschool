@@ -119,10 +119,12 @@ export interface EvaluationResult {
 
 // 用户交互相关类型
 export interface UserInteraction {
+  id?: string;
+  userId?: string;
   resourceId?: string;
   skillId?: string;
   courseSetId?: string;
-  type: 'like' | 'collect' | 'subscribe' | 'view';
+  type: 'like' | 'collect' | 'subscribe' | 'view' | 'complete';
   timestamp: string;
 }
 

@@ -1,194 +1,367 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { interactions as interactionsApi, progress as progressApi, evaluations as evaluationsApi } from '../api/storage';
+import { supabase } from '../api/supabase';
 import type { UserInteraction, Evaluation } from '../types';
 
-// 用于管理用户交互（点赞、收藏、订阅）的 hook
-export function useInteractions() {
+interface UseInteractionsResult {
+  interactions: UserInteraction[];
+  isLoading: boolean;
+  isSubscribed: (courseSetId: string) => boolean;
+  isLiked: (resourceId: string) => boolean;
+  isCollected: (resourceId: string) => boolean;
+  toggleSubscribe: (courseSetId: string) => Promise<{ success: boolean; error?: string }>;
+  toggleLike: (resourceId: string) => Promise<{ success: boolean; error?: string }>;
+  toggleCollect: (resourceId: string) => Promise<{ success: boolean; error?: string }>;
+  refetch: () => Promise<void>;
+}
+
+export function useInteractions(): UseInteractionsResult {
   const { user } = useAuth();
   const [interactions, setInteractions] = useState<UserInteraction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      const userInteractions = interactionsApi.getUserInteractions(user.id);
-      setInteractions(userInteractions);
-    } else {
+  const fetchInteractions = useCallback(async () => {
+    if (!user) {
       setInteractions([]);
+      return;
     }
-  }, [user]);
 
-  const addInteraction = useCallback(async (interaction: Omit<UserInteraction, 'timestamp'>) => {
-    if (!user) return { success: false, error: 'Not authenticated' };
-    
     setIsLoading(true);
     try {
-      const result = interactionsApi.addInteraction(user.id, interaction);
-      if (result.success) {
-        const updatedInteractions = interactionsApi.getUserInteractions(user.id);
-        setInteractions(updatedInteractions);
+      const { data, error } = await supabase
+        .from('user_interactions')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching interactions:', error);
+        setInteractions([]);
+      } else {
+        setInteractions((data || []).map(i => ({
+          id: i.id,
+          userId: i.user_id,
+          type: i.type as 'like' | 'collect' | 'subscribe' | 'view',
+          resourceId: i.resource_id,
+          skillId: i.skill_id,
+          courseSetId: i.course_set_id,
+          timestamp: i.created_at
+        })));
       }
-      return result;
+    } catch (err) {
+      console.error('Error fetching interactions:', err);
+      setInteractions([]);
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
-  const removeInteraction = useCallback(async (interaction: Omit<UserInteraction, 'timestamp'>) => {
-    if (!user) return { success: false, error: 'Not authenticated' };
-    
-    setIsLoading(true);
-    try {
-      const result = interactionsApi.removeInteraction(user.id, interaction);
-      if (result.success) {
-        const updatedInteractions = interactionsApi.getUserInteractions(user.id);
-        setInteractions(updatedInteractions);
+  useEffect(() => {
+    fetchInteractions();
+  }, [fetchInteractions]);
+
+  const isSubscribed = useCallback((courseSetId: string): boolean => {
+    return interactions.some(i => i.type === 'subscribe' && i.courseSetId === courseSetId);
+  }, [interactions]);
+
+  const isLiked = useCallback((resourceId: string): boolean => {
+    return interactions.some(i => i.type === 'like' && i.resourceId === resourceId);
+  }, [interactions]);
+
+  const isCollected = useCallback((resourceId: string): boolean => {
+    return interactions.some(i => i.type === 'collect' && i.resourceId === resourceId);
+  }, [interactions]);
+
+  const toggleSubscribe = useCallback(async (courseSetId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: '请先登录' };
+    }
+
+    const existing = interactions.find(i => i.type === 'subscribe' && i.courseSetId === courseSetId);
+
+    if (existing?.id) {
+      const { error } = await supabase
+        .from('user_interactions')
+        .delete()
+        .eq('id', existing.id);
+
+      if (error) {
+        return { success: false, error: error.message };
       }
-      return result;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  const hasInteraction = useCallback((interaction: Omit<UserInteraction, 'timestamp'>) => {
-    if (!user) return false;
-    return interactionsApi.hasInteraction(user.id, interaction);
-  }, [user]);
-
-  const isLiked = useCallback((resourceId: string) => {
-    return hasInteraction({ type: 'like', resourceId });
-  }, [hasInteraction]);
-
-  const isCollected = useCallback((resourceId: string) => {
-    return hasInteraction({ type: 'collect', resourceId });
-  }, [hasInteraction]);
-
-  const isSubscribed = useCallback((courseSetId: string) => {
-    return hasInteraction({ type: 'subscribe', courseSetId });
-  }, [hasInteraction]);
-
-  const toggleLike = useCallback(async (resourceId: string) => {
-    if (isLiked(resourceId)) {
-      return removeInteraction({ type: 'like', resourceId });
     } else {
-      return addInteraction({ type: 'like', resourceId });
-    }
-  }, [isLiked, addInteraction, removeInteraction]);
+      const { error } = await supabase
+        .from('user_interactions')
+        .insert({
+          user_id: user.id,
+          type: 'subscribe',
+          course_set_id: courseSetId
+        });
 
-  const toggleCollect = useCallback(async (resourceId: string) => {
-    if (isCollected(resourceId)) {
-      return removeInteraction({ type: 'collect', resourceId });
-    } else {
-      return addInteraction({ type: 'collect', resourceId });
+      if (error) {
+        return { success: false, error: error.message };
+      }
     }
-  }, [isCollected, addInteraction, removeInteraction]);
 
-  const toggleSubscribe = useCallback(async (courseSetId: string) => {
-    if (isSubscribed(courseSetId)) {
-      return removeInteraction({ type: 'subscribe', courseSetId });
-    } else {
-      return addInteraction({ type: 'subscribe', courseSetId });
+    await fetchInteractions();
+    return { success: true };
+  }, [user, interactions, fetchInteractions]);
+
+  const toggleLike = useCallback(async (resourceId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: '请先登录' };
     }
-  }, [isSubscribed, addInteraction, removeInteraction]);
+
+    const existing = interactions.find(i => i.type === 'like' && i.resourceId === resourceId);
+
+    if (existing?.id) {
+      const { error } = await supabase
+        .from('user_interactions')
+        .delete()
+        .eq('id', existing.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+    } else {
+      const { error } = await supabase
+        .from('user_interactions')
+        .insert({
+          user_id: user.id,
+          type: 'like',
+          resource_id: resourceId
+        });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+    }
+
+    await fetchInteractions();
+    return { success: true };
+  }, [user, interactions, fetchInteractions]);
+
+  const toggleCollect = useCallback(async (resourceId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: '请先登录' };
+    }
+
+    const existing = interactions.find(i => i.type === 'collect' && i.resourceId === resourceId);
+
+    if (existing?.id) {
+      const { error } = await supabase
+        .from('user_interactions')
+        .delete()
+        .eq('id', existing.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+    } else {
+      const { error } = await supabase
+        .from('user_interactions')
+        .insert({
+          user_id: user.id,
+          type: 'collect',
+          resource_id: resourceId
+        });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+    }
+
+    await fetchInteractions();
+    return { success: true };
+  }, [user, interactions, fetchInteractions]);
 
   return {
     interactions,
     isLoading,
-    addInteraction,
-    removeInteraction,
-    hasInteraction,
+    isSubscribed,
     isLiked,
     isCollected,
-    isSubscribed,
+    toggleSubscribe,
     toggleLike,
     toggleCollect,
-    toggleSubscribe
+    refetch: fetchInteractions
   };
 }
 
-// 用于管理用户进度的 hook
-export function useProgress(courseId: string) {
-  const { user } = useAuth();
-  const [progressValue, setProgressValue] = useState<number>(0);
-  const [isCompleted, setIsCompleted] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      const userProgress = progressApi.getCourseProgress(user.id, courseId);
-      if (userProgress) {
-        setProgressValue(userProgress.progress);
-        setIsCompleted(userProgress.completed);
-      }
-    }
-  }, [user, courseId]);
-
-  const updateProgress = useCallback(async (newProgress: number) => {
-    if (!user) return;
-    
-    const result = progressApi.updateProgress(user.id, courseId, newProgress);
-    
-    if (result.success && result.data) {
-      setProgressValue(result.data.progress);
-      setIsCompleted(result.data.completed);
-    }
-  }, [user, courseId]);
-
-  const markComplete = useCallback(async () => {
-    await updateProgress(100);
-  }, [updateProgress]);
-
-  return {
-    progress: progressValue,
-    isCompleted,
-    updateProgress,
-    markComplete
-  };
+interface UseCompletedCoursesResult {
+  completedCourseSets: string[];
+  isLoading: boolean;
+  toggleComplete: (courseSetId: string) => Promise<{ success: boolean; error?: string }>;
+  isCompleted: (courseSetId: string) => boolean;
+  refetch: () => Promise<void>;
 }
 
-// 用于管理评估的 hook
-export function useEvaluations() {
+export function useCompletedCourses(): UseCompletedCoursesResult {
   const { user } = useAuth();
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [completedCourseSets, setCompletedCourseSets] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      const userEvaluations = evaluationsApi.getUserEvaluations(user.id);
-      setEvaluations(userEvaluations);
+  const fetchCompleted = useCallback(async () => {
+    if (!user) {
+      setCompletedCourseSets([]);
+      return;
     }
-  }, [user]);
 
-  const submitEvaluation = useCallback(async (url: string) => {
-    if (!user) return { success: false, error: 'Not authenticated' };
-    
     setIsLoading(true);
     try {
-      const result = evaluationsApi.submitEvaluation(user.id, url);
-      
-      if (result.success) {
-        const updatedEvaluations = evaluationsApi.getUserEvaluations(user.id);
-        setEvaluations(updatedEvaluations);
+      const { data, error } = await supabase
+        .from('user_interactions')
+        .select('course_set_id')
+        .eq('user_id', user.id)
+        .eq('type', 'complete');
+
+      if (error) {
+        console.error('Error fetching completed courses:', error);
+        setCompletedCourseSets([]);
+      } else {
+        setCompletedCourseSets((data || []).map(i => i.course_set_id).filter(Boolean));
       }
-      
-      return result;
+    } catch (err) {
+      console.error('Error fetching completed courses:', err);
+      setCompletedCourseSets([]);
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
-  const refreshEvaluations = useCallback(() => {
-    if (user) {
-      const userEvaluations = evaluationsApi.getUserEvaluations(user.id);
-      setEvaluations(userEvaluations);
+  useEffect(() => {
+    fetchCompleted();
+  }, [fetchCompleted]);
+
+  const isCompleted = useCallback((courseSetId: string): boolean => {
+    return completedCourseSets.includes(courseSetId);
+  }, [completedCourseSets]);
+
+  const toggleComplete = useCallback(async (courseSetId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: '请先登录' };
+    }
+
+    const existing = completedCourseSets.includes(courseSetId);
+
+    if (existing) {
+      const { error } = await supabase
+        .from('user_interactions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('type', 'complete')
+        .eq('course_set_id', courseSetId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+    } else {
+      const { error } = await supabase
+        .from('user_interactions')
+        .insert({
+          user_id: user.id,
+          type: 'complete',
+          course_set_id: courseSetId
+        });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+    }
+
+    await fetchCompleted();
+    return { success: true };
+  }, [user, completedCourseSets, fetchCompleted]);
+
+  return {
+    completedCourseSets,
+    isLoading,
+    toggleComplete,
+    isCompleted,
+    refetch: fetchCompleted
+  };
+}
+
+interface UseEvaluationsResult {
+  evaluations: Evaluation[];
+  isLoading: boolean;
+  submitEvaluation: (url: string) => Promise<{ success: boolean; error?: string }>;
+  refetch: () => Promise<void>;
+}
+
+export function useEvaluations(): UseEvaluationsResult {
+  const { user } = useAuth();
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchEvaluations = useCallback(async () => {
+    if (!user) {
+      setEvaluations([]);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('evaluations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching evaluations:', error);
+        setEvaluations([]);
+      } else {
+        setEvaluations((data || []).map(e => ({
+          id: e.id,
+          url: e.url,
+          repositoryName: e.repositoryName || e.url,
+          status: e.status as 'pending' | 'completed' | 'failed',
+          submittedAt: e.submittedAt || e.created_at,
+          result: e.result
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching evaluations:', err);
+      setEvaluations([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    fetchEvaluations();
+  }, [fetchEvaluations]);
+
+  const submitEvaluation = useCallback(async (url: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: '请先登录' };
+    }
+
+    const match = url.match(/github\.com\/([^\/]+\/[^\/]+)/);
+    const repositoryName = match ? match[1] : url;
+
+    const { error } = await supabase
+      .from('evaluations')
+      .insert({
+        user_id: user.id,
+        url,
+        repositoryName,
+        status: 'pending'
+      });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    await fetchEvaluations();
+    return { success: true };
+  }, [user, fetchEvaluations]);
 
   return {
     evaluations,
     isLoading,
     submitEvaluation,
-    refreshEvaluations
+    refetch: fetchEvaluations
   };
 }
 
-export default { useInteractions, useProgress, useEvaluations };
+export default { useInteractions, useCompletedCourses, useEvaluations };

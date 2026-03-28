@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isCurrentUserAdmin } from '../api/admin-auth';
+import { fetchCourseSets } from '../api/data-service';
+import { useInteractions, useCompletedCourses } from '../hooks/useUserData';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
 import './User.css';
@@ -23,6 +25,32 @@ export default function User() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [subscribedCourseSets, setSubscribedCourseSets] = useState<any[]>([]);
+  const [completedCourseSetIds, setCompletedCourseSetIds] = useState<string[]>([]);
+  const [courseSets, setCourseSets] = useState<any[]>([]);
+
+  const { isSubscribed } = useInteractions();
+  const { completedCourseSets: completedIds } = useCompletedCourses();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadCourseSets();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (completedIds.length >= 0) {
+      const subscribed = courseSets.filter(cs => isSubscribed(cs.id));
+      setSubscribedCourseSets(subscribed);
+      setCompletedCourseSetIds(completedIds);
+    }
+  }, [completedIds, courseSets, isSubscribed]);
+
+  const loadCourseSets = async () => {
+    const data = await fetchCourseSets();
+    setCourseSets(data);
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +85,9 @@ export default function User() {
     logout();
     navigate('/');
   };
+
+  const getCompletedCount = () => completedCourseSetIds.length;
+  const getSubscribedCount = () => subscribedCourseSets.length;
   
   if (isAuthenticated && user) {
     return (
@@ -89,22 +120,22 @@ export default function User() {
               <div className="user-stats">
                 <div className="stat-card">
                   <span className="stat-icon">📚</span>
-                  <span className="stat-value">{user.stats.coursesCompleted}</span>
+                  <span className="stat-value">{getCompletedCount()}</span>
                   <span className="stat-label">已完成课程</span>
                 </div>
                 <div className="stat-card">
+                  <span className="stat-icon">⭐</span>
+                  <span className="stat-value">{getSubscribedCount()}</span>
+                  <span className="stat-label">订阅课程</span>
+                </div>
+                <div className="stat-card">
                   <span className="stat-icon">❤️</span>
-                  <span className="stat-value">{user.stats.resourcesLiked}</span>
+                  <span className="stat-value">-</span>
                   <span className="stat-label">点赞资源</span>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-icon">⭐</span>
-                  <span className="stat-value">{user.stats.resourcesCollected}</span>
-                  <span className="stat-label">收藏资源</span>
-                </div>
-                <div className="stat-card">
                   <span className="stat-icon">🛡️</span>
-                  <span className="stat-value">{user.stats.evaluationsSubmitted}</span>
+                  <span className="stat-value">-</span>
                   <span className="stat-label">提交评估</span>
                 </div>
               </div>
@@ -126,6 +157,57 @@ export default function User() {
                 </button>
               </div>
             </div>
+
+            {subscribedCourseSets.length > 0 && (
+              <div className="my-courses-section card">
+                <h3>📖 我的订阅课程</h3>
+                <div className="course-list">
+                  {subscribedCourseSets.map(cs => (
+                    <div key={cs.id} className="course-item">
+                      <div className="course-info">
+                        <span className="course-icon">{cs.icon}</span>
+                        <div>
+                          <Link to={`/course-sets`} className="course-title">
+                            {cs.title}
+                          </Link>
+                          <p className="course-desc">{cs.description}</p>
+                          <span className="course-meta">
+                            {cs.courseCount} 门课程 • {completedCourseSetIds.includes(cs.id) ? '✅ 已完成' : '📚学习中'}
+                          </span>
+                        </div>
+                      </div>
+                      <Link to="/course-sets" className="btn btn-secondary btn-sm">
+                        继续学习
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {courseSets.filter(cs => completedCourseSetIds.includes(cs.id)).length > 0 && (
+              <div className="my-courses-section card completed">
+                <h3>🏆 已完成课程</h3>
+                <div className="course-list">
+                  {courseSets
+                    .filter(cs => completedCourseSetIds.includes(cs.id))
+                    .map(cs => (
+                      <div key={cs.id} className="course-item completed">
+                        <div className="course-info">
+                          <span className="course-icon">{cs.icon}</span>
+                          <div>
+                            <Link to={`/course-sets`} className="course-title">
+                              {cs.title}
+                            </Link>
+                            <p className="course-desc">{cs.description}</p>
+                          </div>
+                        </div>
+                        <span className="completed-badge">✅ 完成</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
             
             <div className="quick-links">
               <h3>快速导航</h3>
@@ -169,7 +251,7 @@ export default function User() {
             <h1>{isLoginMode ? '登录' : '注册'}</h1>
             <p className="text-gray">
               {isLoginMode 
-                ? '登录后可记录学习进度，收藏资源，提交评估' 
+                ? '登录后可记录学习进度，收藏资源，订阅课程，提交评估' 
                 : '创建账号开始你的 OpenClaw 学习之旅'}
             </p>
             
@@ -244,12 +326,6 @@ export default function User() {
                 >
                   {isLoginMode ? '立即注册' : '立即登录'}
                 </button>
-              </p>
-            </div>
-            
-            <div className="auth-note">
-              <p className="text-gray">
-                * MVP 演示版本，数据存储在本地浏览器中
               </p>
             </div>
           </div>
