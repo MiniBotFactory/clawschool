@@ -1,6 +1,6 @@
 import { supabase, TABLES } from './supabase';
 import { checkPermission } from './admin-auth';
-import { collectOpenClawResources } from './github-collector';
+import { collectFromGitHub } from './github-collector';
 import { generateCourseOutline } from './openrouter';
 
 export interface SystemConfig {
@@ -170,7 +170,7 @@ export const jobSchedulerApi = {
 
       switch (job.name) {
         case 'collect_github':
-          result = await collectOpenClawResources();
+          result = await collectFromGitHub();
           break;
         case 'generate_courses':
           result = await generateCoursesJob();
@@ -206,7 +206,7 @@ export const contentCollectionApi = {
     }
 
     try {
-      const result = await collectOpenClawResources();
+      const result = await collectFromGitHub();
 
       if (result.resources.length > 0) {
         await supabase

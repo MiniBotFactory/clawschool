@@ -4,7 +4,7 @@
 import { supabase, TABLES } from './supabase';
 import { chatCompletion, analyzeResourceQuality, generateCourseOutline, evaluateRepository } from './openrouter';
 import { LLM_CONFIG } from './llm-config';
-import { collectOpenClawResources, getRepository, getRepositoryReadme } from './github-collector';
+import { collectFromGitHub, getRepository, getRepositoryReadme } from './github-collector';
 
 // ==================== 资源 API ====================
 
@@ -243,7 +243,7 @@ export const collectionApi = {
   // 手动触发内容收集
   async collectFromGitHub() {
     try {
-      const result = await collectOpenClawResources();
+      const result = await collectFromGitHub();
 
       // 保存资源到数据库
       if (result.resources.length > 0) {
