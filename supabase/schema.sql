@@ -159,6 +159,9 @@ DROP POLICY IF EXISTS "Users can insert own interactions" ON user_interactions;
 DROP POLICY IF EXISTS "Users can delete own interactions" ON user_interactions;
 DROP POLICY IF EXISTS "Users can read own evaluations" ON evaluations;
 DROP POLICY IF EXISTS "Users can insert own evaluations" ON evaluations;
+DROP POLICY IF EXISTS "Service can update resources" ON resources;
+DROP POLICY IF EXISTS "Service can delete resources" ON resources;
+DROP POLICY IF EXISTS "Service can update skills" ON skills;
 
 CREATE POLICY "Public read resources" ON resources FOR SELECT USING (true);
 CREATE POLICY "Public read skills" ON skills FOR SELECT USING (true);
@@ -166,6 +169,8 @@ CREATE POLICY "Public read course_sets" ON course_sets FOR SELECT USING (true);
 CREATE POLICY "Public read courses" ON courses FOR SELECT USING (true);
 
 CREATE POLICY "Service can insert resources" ON resources FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service can update resources" ON resources FOR UPDATE USING (true);
+CREATE POLICY "Service can delete resources" ON resources FOR DELETE USING (true);
 CREATE POLICY "Service can insert skills" ON skills FOR INSERT WITH CHECK (true);
 CREATE POLICY "Service can update skills" ON skills FOR UPDATE USING (true);
 CREATE POLICY "Service can insert course_sets" ON course_sets FOR INSERT WITH CHECK (true);
