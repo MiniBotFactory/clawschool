@@ -1,14 +1,12 @@
-// 管理员权限系统
-
 import { supabase } from './supabase';
+import { auth as localAuth } from './storage';
 
-// 默认管理员邮箱
 const DEFAULT_ADMIN_EMAIL = 'wmango@hotmail.com';
 
-// 管理员角色
+const ADMIN_EMAILS_KEY = 'clawschool_admin_emails';
+
 export type AdminRole = 'super_admin' | 'admin' | 'editor';
 
-// 管理员信息
 export interface AdminUser {
   id: string;
   email: string;
@@ -18,158 +16,180 @@ export interface AdminUser {
   lastLogin?: string;
 }
 
-// 检查是否是管理员
-export async function isAdmin(userId?: string): Promise<boolean> {
-  if (!userId) {
+function getLocalAdmins(): AdminUser[] {
+  try {
+    const data = localStorage.getItem(ADMIN_EMAILS_KEY);
+    if (data) return JSON.parse(data);
+  } catch { /* ignore */ }
+
+  const defaultAdmin: AdminUser = {
+    id: 'default_super_admin',
+    email: DEFAULT_ADMIN_EMAIL,
+    name: 'Super Admin',
+    role: 'super_admin',
+    createdAt: new Date().toISOString()
+  };
+  localStorage.setItem(ADMIN_EMAILS_KEY, JSON.stringify([defaultAdmin]));
+  return [defaultAdmin];
+}
+
+function saveLocalAdmins(admins: AdminUser[]) {
+  localStorage.setItem(ADMIN_EMAILS_KEY, JSON.stringify(admins));
+}
+
+function getCurrentUserEmail(): string | null {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  if (!supabaseUrl) {
+    const user = localAuth.getCurrentUser();
+    return user?.email || null;
+  }
+  return null;
+}
+
+export async function isCurrentUserAdmin(): Promise<boolean> {
+  const localEmail = getCurrentUserEmail();
+  if (localEmail) {
+    if (localEmail === DEFAULT_ADMIN_EMAIL) return true;
+    const admins = getLocalAdmins();
+    return admins.some(a => a.email === localEmail);
+  }
+
+  try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
-    userId = user.id;
+    if (user.email === DEFAULT_ADMIN_EMAIL) return true;
+
+    const { data } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('email', user.email)
+      .single();
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
+export async function isAdmin(_userId?: string): Promise<boolean> {
+  return isCurrentUserAdmin();
+}
+
+export async function getAdminRole(_userId?: string): Promise<AdminRole | null> {
+  const localEmail = getCurrentUserEmail();
+  if (localEmail) {
+    if (localEmail === DEFAULT_ADMIN_EMAIL) return 'super_admin';
+    const admins = getLocalAdmins();
+    const admin = admins.find(a => a.email === localEmail);
+    return admin?.role || null;
   }
 
-  // 检查是否是默认管理员
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user?.email === DEFAULT_ADMIN_EMAIL) return true;
-
-  // 检查数据库中的管理员记录
-  const { data, error } = await supabase
-    .from('admins')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  return !error && !!data;
-}
-
-// 获取当前用户是否是管理员
-export async function isCurrentUserAdmin(): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-  
-  // 默认管理员
-  if (user.email === DEFAULT_ADMIN_EMAIL) return true;
-  
-  return isAdmin(user.id);
-}
-
-// 获取管理员角色
-export async function getAdminRole(userId?: string): Promise<AdminRole | null> {
-  if (!userId) {
+  try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    userId = user.id;
+    if (user.email === DEFAULT_ADMIN_EMAIL) return 'super_admin';
+
+    const { data } = await supabase
+      .from('admins')
+      .select('role')
+      .eq('email', user.email)
+      .single();
+    return (data?.role as AdminRole) || null;
+  } catch {
+    return null;
   }
-
-  // 默认管理员是 super_admin
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user?.email === DEFAULT_ADMIN_EMAIL) return 'super_admin';
-
-  const { data, error } = await supabase
-    .from('admins')
-    .select('role')
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !data) return null;
-  return data.role as AdminRole;
 }
 
-// 获取所有管理员
 export async function getAllAdmins(): Promise<AdminUser[]> {
-  const { data, error } = await supabase
-    .from('admins')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching admins:', error);
-    return [];
+  const localEmail = getCurrentUserEmail();
+  if (localEmail) {
+    return getLocalAdmins();
   }
 
-  return data.map(admin => ({
-    id: admin.id,
-    email: admin.email,
-    name: admin.name,
-    role: admin.role,
-    createdAt: admin.created_at,
-    lastLogin: admin.last_login
-  }));
+  try {
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return getLocalAdmins();
+
+    return data.map(admin => ({
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role,
+      createdAt: admin.created_at,
+      lastLogin: admin.last_login
+    }));
+  } catch {
+    return getLocalAdmins();
+  }
 }
 
-// 添加管理员
 export async function addAdmin(email: string, name: string, role: AdminRole = 'admin'): Promise<{ success: boolean; error?: string }> {
-  // 检查当前用户是否是 super_admin
   const currentRole = await getAdminRole();
   if (currentRole !== 'super_admin') {
     return { success: false, error: '只有超级管理员可以添加管理员' };
   }
 
-  // 检查是否已存在
-  const { data: existing } = await supabase
-    .from('admins')
-    .select('*')
-    .eq('email', email)
-    .single();
-
-  if (existing) {
+  const admins = getLocalAdmins();
+  if (admins.some(a => a.email === email)) {
     return { success: false, error: '该邮箱已经是管理员' };
   }
 
-  // 添加管理员
-  const { error } = await supabase
-    .from('admins')
-    .insert({
-      email,
-      name,
-      role,
-      created_at: new Date().toISOString()
-    });
+  admins.push({
+    id: `admin_${Date.now()}`,
+    email,
+    name,
+    role,
+    createdAt: new Date().toISOString()
+  });
+  saveLocalAdmins(admins);
 
-  if (error) {
-    return { success: false, error: error.message };
-  }
+  try {
+    await supabase.from('admins').insert({ email, name, role });
+  } catch { /* Supabase not available, local only */ }
 
   return { success: true };
 }
 
-// 更新管理员角色
 export async function updateAdminRole(adminId: string, role: AdminRole): Promise<{ success: boolean; error?: string }> {
   const currentRole = await getAdminRole();
   if (currentRole !== 'super_admin') {
     return { success: false, error: '只有超级管理员可以修改管理员角色' };
   }
 
-  const { error } = await supabase
-    .from('admins')
-    .update({ role })
-    .eq('id', adminId);
-
-  if (error) {
-    return { success: false, error: error.message };
+  const admins = getLocalAdmins();
+  const index = admins.findIndex(a => a.id === adminId);
+  if (index >= 0) {
+    admins[index].role = role;
+    saveLocalAdmins(admins);
   }
+
+  try {
+    await supabase.from('admins').update({ role }).eq('id', adminId);
+  } catch { /* ignore */ }
 
   return { success: true };
 }
 
-// 删除管理员
 export async function removeAdmin(adminId: string): Promise<{ success: boolean; error?: string }> {
   const currentRole = await getAdminRole();
   if (currentRole !== 'super_admin') {
     return { success: false, error: '只有超级管理员可以删除管理员' };
   }
 
-  const { error } = await supabase
-    .from('admins')
-    .delete()
-    .eq('id', adminId);
+  const admins = getLocalAdmins();
+  const filtered = admins.filter(a => a.id !== adminId);
+  saveLocalAdmins(filtered);
 
-  if (error) {
-    return { success: false, error: error.message };
-  }
+  try {
+    await supabase.from('admins').delete().eq('id', adminId);
+  } catch { /* ignore */ }
 
   return { success: true };
 }
 
-// 检查权限
 export async function checkPermission(action: 'read' | 'write' | 'delete' | 'manage_admins'): Promise<boolean> {
   const role = await getAdminRole();
   if (!role) return false;
