@@ -177,18 +177,52 @@ export async function collectFromAllSources(): Promise<{
   const resources: any[] = [];
   const stats = { github: 0, youtube: 0, blog: 0, community: 0 };
 
-  const { data: sources } = await supabase
+  let { data: sources } = await supabase
     .from('content_sources')
     .select('*')
     .eq('enabled', true);
 
-  if (!sources) return { resources, stats };
+  if (!sources || sources.length === 0) {
+    sources = [
+      { source_type: 'github', search_query: 'openclaw skill' },
+      { source_type: 'github', search_query: 'claw-skill' },
+      { source_type: 'github', search_query: 'claw-plugin' },
+      { source_type: 'community', url: 'subreddit:openclaw', search_query: 'openclaw' }
+    ];
+  }
 
   for (const source of sources) {
     try {
       let items: any[] = [];
 
       switch (source.source_type) {
+        case 'github':
+          const searchParams = new URLSearchParams({
+            q: `${source.search_query || 'openclaw'} stars:>10`,
+            sort: 'stars',
+            order: 'desc',
+            per_page: '10'
+          });
+          const ghResponse = await fetch(`https://api.github.com/search/repositories?${searchParams}`, {
+            headers: { 'Accept': 'application/vnd.github.v3+json' }
+          });
+          const ghData = await ghResponse.json();
+          if (ghData.items) {
+            items = ghData.items.map((repo: any) => ({
+              title: repo.full_name,
+              description: repo.description || '',
+              url: repo.html_url,
+              source: 'github',
+              category: 'general',
+              likes: repo.stargazers_count,
+              views: repo.stargazers_count * 5,
+              publishedat: repo.created_at,
+              tags: repo.topics || []
+            }));
+          }
+          stats.github += items.length;
+          break;
+
         case 'youtube':
           const videos = await youtubeCollector.searchVideos(source.search_query || 'openclaw');
           items = videos.filter(v => isRelevantToOpenClaw(`${v.title} ${v.description}`))
@@ -219,27 +253,15 @@ export async function collectFromAllSources(): Promise<{
       }
 
       if (items.length > 0) {
-        await supabase.from('resources').upsert(items, { onConflict: 'url' });
-
-        await supabase
-          .from('content_sources')
-          .update({
-            last_collected: new Date().toISOString(),
-            collection_count: (source.collection_count || 0) + items.length
-          })
-          .eq('id', source.id);
+        const { error } = await supabase.from('resources').upsert(items, { onConflict: 'url' });
+        if (error) {
+          console.error(`Error upserting items from ${source.source_type}:`, error);
+        }
       }
 
       resources.push(...items);
     } catch (err) {
-      console.error(`Error collecting from ${source.name}:`, err);
-
-      await supabase
-        .from('content_sources')
-        .update({
-          error_count: (source.error_count || 0) + 1
-        })
-        .eq('id', source.id);
+      console.error(`Error collecting from ${source.source_type}:`, err);
     }
   }
 
