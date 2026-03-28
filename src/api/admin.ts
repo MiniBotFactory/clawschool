@@ -211,15 +211,15 @@ export const contentCollectionApi = {
       if (result.resources.length > 0) {
         const { error: resErr } = await supabase
           .from(TABLES.RESOURCES)
-          .upsert(result.resources, { onConflict: 'url' });
-        if (resErr) throw new Error(`Resources upsert: ${resErr.message}`);
+          .insert(result.resources);
+        if (resErr) throw new Error(`Resources insert: ${resErr.message}`);
       }
 
       if (result.skills.length > 0) {
         const { error: skillErr } = await supabase
           .from(TABLES.SKILLS)
-          .upsert(result.skills, { onConflict: 'name' });
-        if (skillErr) throw new Error(`Skills upsert: ${skillErr.message}`);
+          .insert(result.skills);
+        if (skillErr) throw new Error(`Skills insert: ${skillErr.message}`);
       }
 
       return { success: true, stats: result.stats };
