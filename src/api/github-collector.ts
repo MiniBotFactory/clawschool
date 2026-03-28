@@ -55,6 +55,28 @@ function categorizeRepo(repo: GitHubRepo): string {
   return 'general';
 }
 
+function calculateTrend(repo: GitHubRepo): number {
+  const now = new Date();
+  const pushed = new Date(repo.pushed_at);
+  const daysSinceUpdate = (now.getTime() - pushed.getTime()) / (1000 * 60 * 60 * 24);
+
+  if (daysSinceUpdate < 7) return 25;
+  if (daysSinceUpdate < 30) return 15;
+  if (daysSinceUpdate < 90) return 5;
+  return 0;
+}
+
+function isSkillRepo(repo: GitHubRepo): boolean {
+  const text = `${repo.name} ${repo.description || ''} ${repo.topics.join(' ')}`.toLowerCase();
+  return (
+    text.includes('skill') ||
+    text.includes('plugin') ||
+    text.includes('extension') ||
+    text.includes('tool') ||
+    repo.topics.some(t => ['skill', 'plugin', 'extension', 'tool'].includes(t))
+  );
+}
+
 function repoToResource(repo: GitHubRepo) {
   const category = categorizeRepo(repo);
   return {
@@ -78,10 +100,10 @@ function repoToSkill(repo: GitHubRepo, rank: number) {
     githuburl: repo.html_url,
     stars: repo.stargazers_count,
     forks: repo.forks_count,
-    downloads: 0,
+    downloads: repo.stargazers_count,
     issues: repo.open_issues_count,
     lastupdate: repo.pushed_at,
-    trend: 0,
+    trend: calculateTrend(repo),
     rank,
     category: categorizeRepo(repo)
   };
@@ -94,9 +116,11 @@ export async function collectFromGitHub(): Promise<{
 }> {
   const resources: any[] = [];
   const skills: any[] = [];
+  const seenResources = new Set<string>();
+  const seenSkills = new Set<string>();
   let errors = 0;
 
-  const queries = [
+  const resourceQueries = [
     'ai-agent framework',
     'llm agent',
     'autonomous agent',
@@ -106,20 +130,23 @@ export async function collectFromGitHub(): Promise<{
     'autogen',
     'crewai',
     'semantic-kernel',
-    'agent-based',
-    'multi-agent',
-    'ai-tools python',
-    'llm-tools',
-    'gpt-agent',
-    'claude-agent'
+    'multi-agent'
   ];
 
-  const seen = new Set<string>();
+  const skillQueries = [
+    'openclaw skill',
+    'claw-skill',
+    'ai-agent plugin',
+    'llm-tool extension',
+    'langchain tool',
+    'crewai tool',
+    'autogen tool'
+  ];
 
-  for (const query of queries) {
+  for (const query of resourceQueries) {
     try {
       const searchParams = new URLSearchParams({
-        q: `${query} stars:>50`,
+        q: `${query} stars:>100`,
         sort: 'stars',
         order: 'desc',
         per_page: '10'
@@ -131,10 +158,40 @@ export async function collectFromGitHub(): Promise<{
 
       if (data.items) {
         for (const repo of data.items) {
-          if (seen.has(repo.html_url)) continue;
-          seen.add(repo.html_url);
+          if (seenResources.has(repo.html_url)) continue;
+          seenResources.add(repo.html_url);
           try {
             resources.push(repoToResource(repo));
+          } catch {
+            errors++;
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`GitHub search error for "${query}":`, err);
+      errors++;
+    }
+  }
+
+  for (const query of skillQueries) {
+    try {
+      const searchParams = new URLSearchParams({
+        q: `${query} stars:>10`,
+        sort: 'stars',
+        order: 'desc',
+        per_page: '10'
+      });
+
+      const data = await githubFetch<{ items: GitHubRepo[] }>(
+        `/search/repositories?${searchParams}`
+      );
+
+      if (data.items) {
+        for (const repo of data.items) {
+          if (seenSkills.has(repo.html_url)) continue;
+          if (!isSkillRepo(repo)) continue;
+          seenSkills.add(repo.html_url);
+          try {
             skills.push(repoToSkill(repo, skills.length + 1));
           } catch {
             errors++;
@@ -150,7 +207,7 @@ export async function collectFromGitHub(): Promise<{
   return {
     resources,
     skills,
-    stats: { total: resources.length, errors }
+    stats: { total: resources.length + skills.length, errors }
   };
 }
 
