@@ -1,7 +1,7 @@
 import { supabase, TABLES } from './supabase';
 
 export async function fetchResources(filters?: { source?: string; category?: string; limit?: number }) {
-  let query = supabase.from(TABLES.RESOURCES).select('*').order('published_at', { ascending: false });
+  let query = supabase.from(TABLES.RESOURCES).select('*').order('publishedat', { ascending: false });
   if (filters?.source) query = query.eq('source', filters.source);
   if (filters?.category) query = query.eq('category', filters.category);
   if (filters?.limit) query = query.limit(filters.limit);
@@ -9,7 +9,7 @@ export async function fetchResources(filters?: { source?: string; category?: str
   return (data || []).map(r => ({
     id: r.id, title: r.title, description: r.description || '', url: r.url, source: r.source,
     category: r.category || '', likes: r.likes || 0, views: r.views || 0,
-    publishedAt: r.published_at?.split('T')[0] || '', tags: r.tags || []
+    publishedAt: r.publishedat?.split('T')[0] || '', tags: r.tags || []
   }));
 }
 
@@ -26,8 +26,8 @@ export async function fetchSkills(filters?: { category?: string; sortBy?: string
   const { data } = await query;
   return (data || []).map(s => ({
     id: s.id, name: s.name, description: s.description || '', author: s.author || '',
-    githubUrl: s.github_url || '', stars: s.stars || 0, forks: s.forks || 0,
-    downloads: s.downloads || 0, issues: s.issues || 0, lastUpdate: s.last_update || '',
+    githubUrl: s.githuburl || '', stars: s.stars || 0, forks: s.forks || 0,
+    downloads: s.downloads || 0, issues: s.issues || 0, lastUpdate: s.lastupdate || '',
     trend: Number(s.trend) || 0, rank: s.rank || 0, category: s.category || ''
   }));
 }
