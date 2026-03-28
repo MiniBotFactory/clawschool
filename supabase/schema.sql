@@ -334,7 +334,54 @@ INSERT INTO scheduled_jobs (name, description, schedule) VALUES
   ('update_rankings', '更新 Skill 排行榜', '0 * * * *')
 ON CONFLICT (name) DO NOTHING;
 
--- 19. 执行日志表
+-- 19. 内容数据源表
+CREATE TABLE IF NOT EXISTS content_sources (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  source_type TEXT NOT NULL CHECK (source_type IN ('github', 'youtube', 'rss', 'community')),
+  url TEXT,
+  description TEXT,
+  search_query TEXT,
+  enabled BOOLEAN DEFAULT true,
+  last_collected TIMESTAMPTZ,
+  collection_count INTEGER DEFAULT 0,
+  error_count INTEGER DEFAULT 0,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_sources_type ON content_sources(source_type);
+CREATE INDEX IF NOT EXISTS idx_content_sources_enabled ON content_sources(enabled);
+
+ALTER TABLE content_sources ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read content_sources" ON content_sources;
+DROP POLICY IF EXISTS "Anyone can insert content_sources" ON content_sources;
+DROP POLICY IF EXISTS "Anyone can update content_sources" ON content_sources;
+DROP POLICY IF EXISTS "Anyone can delete content_sources" ON content_sources;
+
+CREATE POLICY "Anyone can read content_sources" ON content_sources FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert content_sources" ON content_sources FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update content_sources" ON content_sources FOR UPDATE USING (true);
+CREATE POLICY "Anyone can delete content_sources" ON content_sources FOR DELETE USING (true);
+
+-- 插入默认数据源
+INSERT INTO content_sources (name, source_type, description, search_query, enabled) VALUES
+  ('GitHub: OpenClaw', 'github', '搜索 GitHub 上的 OpenClaw 相关仓库', 'openclaw', true),
+  ('GitHub: Claw Skills', 'github', '搜索 GitHub 上的 Claw Skills', 'claw-skill OR openclaw-skill', true),
+  ('YouTube: OpenClaw 教程', 'youtube', '搜索 YouTube 上的 OpenClaw 教程视频', 'openclaw tutorial', true),
+  ('YouTube: Claw 安装', 'youtube', '搜索 OpenClaw 安装指南', 'openclaw install guide', true),
+  ('Reddit: r/openclaw', 'community', 'Reddit OpenClaw 社区', 'subreddit:openclaw', true),
+  ('Reddit: r/AIAgents', 'community', 'Reddit AI Agent 社区', 'subreddit:AIAgents openclaw', true),
+  ('Blog: OpenClaw 官方', 'rss', 'OpenClaw 官方博客 RSS', 'https://openclaw.dev/blog/feed.xml', true)
+ON CONFLICT DO NOTHING;
+
+DROP TRIGGER IF EXISTS update_content_sources_updated_at ON content_sources;
+CREATE TRIGGER update_content_sources_updated_at BEFORE UPDATE ON content_sources
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 20. 执行日志表
 CREATE TABLE IF NOT EXISTS execution_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   action TEXT NOT NULL,

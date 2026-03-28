@@ -12,6 +12,111 @@ export interface SystemConfig {
   updatedAt: string;
 }
 
+export interface ContentSource {
+  id: string;
+  name: string;
+  sourceType: 'github' | 'youtube' | 'rss' | 'community';
+  url?: string;
+  description?: string;
+  searchQuery?: string;
+  enabled: boolean;
+  lastCollectedAt?: string;
+  collectionCount: number;
+  errorCount: number;
+}
+
+export const contentSourcesApi = {
+  async getAll(): Promise<ContentSource[]> {
+    const { data, error } = await supabase
+      .from('content_sources')
+      .select('*')
+      .order('source_type');
+
+    if (error) {
+      console.error('Error fetching content sources:', error);
+      return [];
+    }
+
+    return data.map(source => ({
+      id: source.id,
+      name: source.name,
+      sourceType: source.source_type,
+      url: source.url,
+      description: source.description,
+      searchQuery: source.search_query,
+      enabled: source.enabled,
+      lastCollectedAt: source.last_collected,
+      collectionCount: source.collection_count || 0,
+      errorCount: source.error_count || 0
+    }));
+  },
+
+  async create(source: Omit<ContentSource, 'id' | 'collectionCount' | 'errorCount' | 'lastCollectedAt'>): Promise<{ success: boolean; error?: string }> {
+    if (!(await checkPermission('write'))) {
+      return { success: false, error: '没有权限添加数据源' };
+    }
+
+    const { error } = await supabase
+      .from('content_sources')
+      .insert({
+        name: source.name,
+        source_type: source.sourceType,
+        url: source.url || null,
+        description: source.description || null,
+        search_query: source.searchQuery || null,
+        enabled: source.enabled
+      });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  },
+
+  async update(id: string, updates: Partial<ContentSource>): Promise<{ success: boolean; error?: string }> {
+    if (!(await checkPermission('write'))) {
+      return { success: false, error: '没有权限修改数据源' };
+    }
+
+    const updateData: any = {};
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.sourceType !== undefined) updateData.source_type = updates.sourceType;
+    if (updates.url !== undefined) updateData.url = updates.url;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.searchQuery !== undefined) updateData.search_query = updates.searchQuery;
+    if (updates.enabled !== undefined) updateData.enabled = updates.enabled;
+
+    const { error } = await supabase
+      .from('content_sources')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  },
+
+  async delete(id: string): Promise<{ success: boolean; error?: string }> {
+    if (!(await checkPermission('write'))) {
+      return { success: false, error: '没有权限删除数据源' };
+    }
+
+    const { error } = await supabase
+      .from('content_sources')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  }
+};
+
 export interface ScheduledJob {
   id: string;
   name: string;
