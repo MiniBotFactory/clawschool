@@ -11,6 +11,7 @@ export default function Resources() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [resources, setResources] = useState<any[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
   const { isLiked, isCollected, toggleLike, toggleCollect, refetch } = useInteractions();
 
@@ -19,17 +20,35 @@ export default function Resources() {
   }, []);
 
   const handleToggleLike = async (resourceId: string) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      setError('请先登录');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
     setLoadingId(resourceId);
-    await toggleLike(resourceId);
+    setError(null);
+    const result = await toggleLike(resourceId);
+    if (!result.success) {
+      setError(result.error || '操作失败');
+      setTimeout(() => setError(null), 3000);
+    }
     await refetch();
     setLoadingId(null);
   };
 
   const handleToggleCollect = async (resourceId: string) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      setError('请先登录');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
     setLoadingId(resourceId);
-    await toggleCollect(resourceId);
+    setError(null);
+    const result = await toggleCollect(resourceId);
+    if (!result.success) {
+      setError(result.error || '操作失败');
+      setTimeout(() => setError(null), 3000);
+    }
     await refetch();
     setLoadingId(null);
   };
@@ -65,6 +84,12 @@ export default function Resources() {
             <h1>📚 学习资源库</h1>
             <p className="text-gray">聚合全网优质 OpenClaw 学习资源，帮你节省搜索时间</p>
           </div>
+
+          {error && (
+            <div className="error-message" style={{ margin: '1rem 0', padding: '0.75rem', background: '#fee', border: '1px solid #fca', borderRadius: '8px', color: '#c00' }}>
+              {error}
+            </div>
+          )}
           
           <div className="resources-filters">
             <div className="filter-group">
