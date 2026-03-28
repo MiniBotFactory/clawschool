@@ -48,24 +48,30 @@ CREATE POLICY "Admins can update jobs" ON scheduled_jobs
     auth.jwt() ->> 'email' IN ('wmango@hotmail.com')
   );
 
--- 5. 为 evaluations 表添加公开读取（可选，管理员可能需要查看所有评估）
-CREATE POLICY IF NOT EXISTS "Public read evaluations" ON evaluations
+-- 5. 为 evaluations 表添加公开读取
+DROP POLICY IF EXISTS "Public read evaluations" ON evaluations;
+CREATE POLICY "Public read evaluations" ON evaluations
   FOR SELECT USING (true);
 
--- 6. 为 resources/skills/course_sets 添加写入权限（服务端收集内容用）
-CREATE POLICY IF NOT EXISTS "Service can insert resources" ON resources
+-- 6. 为 resources/skills/course_sets 添加写入权限
+DROP POLICY IF EXISTS "Service can insert resources" ON resources;
+CREATE POLICY "Service can insert resources" ON resources
   FOR INSERT WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Service can insert skills" ON skills
+DROP POLICY IF EXISTS "Service can insert skills" ON skills;
+CREATE POLICY "Service can insert skills" ON skills
   FOR INSERT WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Service can update skills" ON skills
+DROP POLICY IF EXISTS "Service can update skills" ON skills;
+CREATE POLICY "Service can update skills" ON skills
   FOR UPDATE USING (true);
 
-CREATE POLICY IF NOT EXISTS "Service can insert course_sets" ON course_sets
+DROP POLICY IF EXISTS "Service can insert course_sets" ON course_sets;
+CREATE POLICY "Service can insert course_sets" ON course_sets
   FOR INSERT WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Service can insert courses" ON courses
+DROP POLICY IF EXISTS "Service can insert courses" ON courses;
+CREATE POLICY "Service can insert courses" ON courses
   FOR INSERT WITH CHECK (true);
 
 -- 7. 插入默认管理员（确保 wmango@hotmail.com 是 super_admin）
