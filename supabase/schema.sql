@@ -147,6 +147,14 @@ CREATE POLICY "Public read skills" ON skills FOR SELECT USING (true);
 CREATE POLICY "Public read course_sets" ON course_sets FOR SELECT USING (true);
 CREATE POLICY "Public read courses" ON courses FOR SELECT USING (true);
 
+CREATE POLICY "Service can insert resources" ON resources FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service can insert skills" ON skills FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service can update skills" ON skills FOR UPDATE USING (true);
+CREATE POLICY "Service can insert course_sets" ON course_sets FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service can insert courses" ON courses FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Public read evaluations" ON evaluations FOR SELECT USING (true);
+
 -- 用户只能访问自己的数据
 CREATE POLICY "Users can read own profile" ON user_profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON user_profiles FOR UPDATE USING (auth.uid() = id);
@@ -243,32 +251,16 @@ ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scheduled_jobs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can read admin list" ON admins FOR SELECT USING (true);
-CREATE POLICY "Only super_admin can manage admins" ON admins FOR ALL USING (
-  EXISTS (
-    SELECT 1 FROM admins a
-    WHERE a.user_id = auth.uid() AND a.role = 'super_admin'
-  )
-  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
-);
+CREATE POLICY "Anyone can read admins" ON admins FOR SELECT USING (true);
+CREATE POLICY "Super admin can insert" ON admins FOR INSERT WITH CHECK (auth.jwt() ->> 'email' = 'wmango@hotmail.com');
+CREATE POLICY "Super admin can update" ON admins FOR UPDATE USING (auth.jwt() ->> 'email' = 'wmango@hotmail.com');
+CREATE POLICY "Super admin can delete" ON admins FOR DELETE USING (auth.jwt() ->> 'email' = 'wmango@hotmail.com');
 
-CREATE POLICY "Admins can read config" ON system_config FOR SELECT USING (
-  EXISTS (SELECT 1 FROM admins a WHERE a.user_id = auth.uid())
-  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
-);
-CREATE POLICY "Admins can update config" ON system_config FOR ALL USING (
-  EXISTS (SELECT 1 FROM admins a WHERE a.user_id = auth.uid() AND a.role IN ('super_admin', 'admin'))
-  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
-);
+CREATE POLICY "Anyone can read config" ON system_config FOR SELECT USING (true);
+CREATE POLICY "Super admin can update config" ON system_config FOR UPDATE USING (auth.jwt() ->> 'email' = 'wmango@hotmail.com');
 
-CREATE POLICY "Admins can read jobs" ON scheduled_jobs FOR SELECT USING (
-  EXISTS (SELECT 1 FROM admins a WHERE a.user_id = auth.uid())
-  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
-);
-CREATE POLICY "Admins can manage jobs" ON scheduled_jobs FOR ALL USING (
-  EXISTS (SELECT 1 FROM admins a WHERE a.user_id = auth.uid() AND a.role IN ('super_admin', 'admin'))
-  OR auth.jwt() ->> 'email' = 'wmango@hotmail.com'
-);
+CREATE POLICY "Anyone can read jobs" ON scheduled_jobs FOR SELECT USING (true);
+CREATE POLICY "Super admin can update jobs" ON scheduled_jobs FOR UPDATE USING (auth.jwt() ->> 'email' = 'wmango@hotmail.com');
 
 -- 管理员表触发器
 CREATE TRIGGER update_admins_updated_at BEFORE UPDATE ON admins
