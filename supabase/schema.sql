@@ -205,6 +205,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_resources_updated_at ON resources;
+DROP TRIGGER IF EXISTS update_skills_updated_at ON skills;
+DROP TRIGGER IF EXISTS update_course_sets_updated_at ON course_sets;
+DROP TRIGGER IF EXISTS update_courses_updated_at ON courses;
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
+
 CREATE TRIGGER update_resources_updated_at BEFORE UPDATE ON resources
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
@@ -288,7 +294,10 @@ CREATE POLICY "Super admin can update config" ON system_config FOR UPDATE USING 
 CREATE POLICY "Anyone can read jobs" ON scheduled_jobs FOR SELECT USING (true);
 CREATE POLICY "Super admin can update jobs" ON scheduled_jobs FOR UPDATE USING (auth.jwt() ->> 'email' = 'wmango@hotmail.com');
 
--- 管理员表触发器
+DROP TRIGGER IF EXISTS update_admins_updated_at ON admins;
+DROP TRIGGER IF EXISTS update_system_config_updated_at ON system_config;
+DROP TRIGGER IF EXISTS update_scheduled_jobs_updated_at ON scheduled_jobs;
+
 CREATE TRIGGER update_admins_updated_at BEFORE UPDATE ON admins
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER update_system_config_updated_at BEFORE UPDATE ON system_config
